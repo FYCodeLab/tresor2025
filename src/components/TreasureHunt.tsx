@@ -140,7 +140,7 @@ const TreasureHunt = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+    <div className="min-h-[100svh] flex items-center justify-center bg-background relative overflow-hidden">
       <FloatingBackground />
       <Card className="w-11/12 max-w-md bg-white border-none shadow-2xl pulse-glow">
         <CardContent className="p-8 text-center">
@@ -149,7 +149,7 @@ const TreasureHunt = () => {
             Chasse au Trésor
           </h1>
           <p className="text-muted-foreground mb-8 text-lg">
-            Entre le code secret pour ton prochain indice !
+            Entre le code& secret pour ton prochain indice !
           </p>
           <div className="space-y-6">
             <Input
