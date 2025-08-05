@@ -144,7 +144,7 @@ const TreasureHunt = () => {
       <FloatingBackground />
       <Card className="w-11/12 max-w-md bg-white border-none shadow-2xl pulse-glow">
         <CardContent className="p-8 text-center">
-          <div className="text-3xl mb-6">🗝️</div>
+          <div className="text-6xl mb-6">🗝️</div>
           <h1 className="text-3xl font-bold text-treasure-gold mb-6">
             Chasse au Trésor
           </h1>
