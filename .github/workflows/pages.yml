@@ -26,7 +26,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       # [Optionnel SPA] activer si vous avez un router côté client :
-      # - run: cp dist/index.html dist/404.html || true
+      - run: cp dist/index.html dist/404.html || true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
