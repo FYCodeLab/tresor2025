@@ -104,7 +104,7 @@ const TreasureHunt = () => {
         <FloatingBackground />
         <Card className="w-11/12 max-w-2xl bg-white border-none shadow-2xl bounce-in">
           <CardContent className="p-8 text-center">
-            <div className="text-6xl mb-6">🎉</div>
+            <div className="text-6xl mb-6">🗺️</div>
             <h1 className="text-3xl font-bold text-success-green mb-6">
               Code trouvé !
             </h1>
@@ -144,12 +144,12 @@ const TreasureHunt = () => {
       <FloatingBackground />
       <Card className="w-11/12 max-w-md bg-white border-none shadow-2xl pulse-glow">
         <CardContent className="p-8 text-center">
-          <div className="text-6xl mb-6">🗝️</div>
+          <div className="text-3xl mb-6">🗝️</div>
           <h1 className="text-3xl font-bold text-treasure-gold mb-6">
             Chasse au Trésor
           </h1>
           <p className="text-muted-foreground mb-8 text-lg">
-            Entre le code secret pour découvrir ton prochain indice !
+            Entre le code secret pour ton prochain indice !
           </p>
           <div className="space-y-6">
             <Input
