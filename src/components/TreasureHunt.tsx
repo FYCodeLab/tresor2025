@@ -149,7 +149,7 @@ const TreasureHunt = () => {
             Chasse au Trésor
           </h1>
           <p className="text-muted-foreground mb-8 text-lg">
-            Entre le xcode secret pour découvrir ton prochain indice !
+            Entre le code secret pour découvrir ton prochain indice !
           </p>
           <div className="space-y-6">
             <Input
