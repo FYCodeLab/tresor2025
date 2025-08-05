@@ -21,7 +21,7 @@ const TreasureHunt = () => {
   useEffect(() => {
     const loadCodes = async () => {
       try {
-        const response = await fetch("/codes.csv");
+        const response = await fetch(`${import.meta.env.BASE_URL}codes.csv`);
         const csvText = await response.text();
         const lines = csvText.split("\n").slice(1); // Skip header
         const data = lines
@@ -29,10 +29,10 @@ const TreasureHunt = () => {
           .map(line => {
             const commaIndex = line.indexOf(",");
             if (commaIndex === -1) return null;
-            
+
             const code = line.substring(0, commaIndex).trim();
             const content = line.substring(commaIndex + 1).replace(/^"(.*)"$/, '$1').trim();
-            
+
             return {
               code,
               content
@@ -49,7 +49,7 @@ const TreasureHunt = () => {
 
   const handleSubmit = () => {
     const foundCode = codeData.find(item => item.code === inputCode.trim());
-    
+
     if (foundCode) {
       setFoundContent(foundCode.content);
       setCurrentState("success");
@@ -83,7 +83,7 @@ const TreasureHunt = () => {
             <p className="text-white/80 mb-8 text-lg">
               Essaie encore, aventurier !
             </p>
-            <Button 
+            <Button
               onClick={handleTryAgain}
               className="bg-white text-error-dark hover:bg-white/90 font-bold text-lg py-6 px-8 rounded-xl transform transition-all duration-200 hover:scale-105"
             >
@@ -107,9 +107,9 @@ const TreasureHunt = () => {
             </h1>
             {isImageUrl(foundContent) ? (
               <div className="mb-8">
-                <img 
-                  src={foundContent} 
-                  alt="Indice trouvé" 
+                <img
+                  src={foundContent}
+                  alt="Indice trouvé"
                   className="max-w-full h-auto rounded-lg shadow-lg mx-auto"
                 />
               </div>
@@ -124,7 +124,7 @@ const TreasureHunt = () => {
                 </ScrollArea>
               </div>
             )}
-            <Button 
+            <Button
               onClick={handleTryAgain}
               className="bg-success-green hover:bg-success-green/90 text-white font-bold text-lg py-6 px-8 rounded-xl transform transition-all duration-200 hover:scale-105"
             >
@@ -151,13 +151,13 @@ const TreasureHunt = () => {
           <div className="space-y-6">
             <Input
               type="text"
-              placeholder="Code secret..."
+              placeholder="Code secret."
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
               className="text-center text-xl py-6 rounded-xl border-2 border-treasure-gold/50 focus:border-treasure-gold"
               onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
             />
-            <Button 
+            <Button
               onClick={handleSubmit}
               disabled={!inputCode.trim()}
               className="w-full bg-treasure-gold hover:bg-treasure-gold/90 text-foreground font-bold text-xl py-6 rounded-xl transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:transform-none"
