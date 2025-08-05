@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import FloatingBackground from "./FloatingBackground";
 
 interface CodeData {
@@ -107,10 +108,12 @@ const TreasureHunt = () => {
                 />
               </div>
             ) : (
-              <div className="bg-success-light p-6 rounded-lg mb-8">
-                <p className="text-foreground text-lg leading-relaxed whitespace-pre-line">
-                  {foundContent}
-                </p>
+              <div className="bg-success-light p-4 rounded-lg mb-8 h-64">
+                <ScrollArea className="h-full w-full">
+                  <p className="text-foreground text-sm leading-relaxed whitespace-pre-line pr-4">
+                    {foundContent}
+                  </p>
+                </ScrollArea>
               </div>
             )}
             <Button 
