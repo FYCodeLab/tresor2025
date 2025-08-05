@@ -27,12 +27,18 @@ const TreasureHunt = () => {
         const data = lines
           .filter(line => line.trim())
           .map(line => {
-            const [code, content] = line.split(",", 2);
+            const commaIndex = line.indexOf(",");
+            if (commaIndex === -1) return null;
+            
+            const code = line.substring(0, commaIndex).trim();
+            const content = line.substring(commaIndex + 1).replace(/^"(.*)"$/, '$1').trim();
+            
             return {
-              code: code.trim(),
-              content: content?.replace(/^"(.*)"$/, '$1') || ""
+              code,
+              content
             };
-          });
+          })
+          .filter(Boolean) as CodeData[];
         setCodeData(data);
       } catch (error) {
         console.error("Error loading codes:", error);
