@@ -75,7 +75,7 @@ const TreasureHunt = () => {
 
   if (currentState === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-error-red relative overflow-hidden">
+      <div className="min-h-[100svh] flex items-center justify-center bg-error-red relative overflow-hidden">
         <FloatingBackground />
         <Card className={`w-11/12 max-w-md bg-error-dark border-none shadow-2xl ${isShaking ? 'shake' : ''}`}>
           <CardContent className="p-8 text-center">
@@ -100,7 +100,7 @@ const TreasureHunt = () => {
 
   if (currentState === "success") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-success-light relative overflow-hidden">
+      <div className="min-h-[100svh] flex items-center justify-center bg-success-light relative overflow-hidden">
         <FloatingBackground />
         <Card className="w-11/12 max-w-2xl bg-white border-none shadow-2xl bounce-in">
           <CardContent className="p-8 text-center">
