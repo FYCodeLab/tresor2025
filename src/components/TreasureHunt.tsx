@@ -21,7 +21,10 @@ const TreasureHunt = () => {
   useEffect(() => {
     const loadCodes = async () => {
       try {
-        const response = await fetch(`${import.meta.env.BASE_URL}codes.csv`);
+        const response = await fetch(
+          `${import.meta.env.BASE_URL}codes.csv?ts=${Date.now()}`,
+          { cache: "no-store" }
+        );
         const csvText = await response.text();
         const lines = csvText.split("\n").slice(1); // Skip header
         const data = lines
