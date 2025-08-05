@@ -104,8 +104,8 @@ const TreasureHunt = () => {
         <FloatingBackground />
         <Card className="w-11/12 max-w-2xl bg-white border-none shadow-2xl bounce-in">
           <CardContent className="p-8 text-center">
-            <div className="text-6xl mb-6">🗺️</div>
-            <h1 className="text-3xl font-bold text-success-green mb-6">
+            <div className="text-6xl mb-3">🗺️</div>
+            <h1 className="text-2xl font-bold text-success-green mb-3">
               Code trouvé !
             </h1>
             {isImageUrl(foundContent) ? (
