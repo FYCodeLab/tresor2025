@@ -102,9 +102,9 @@ const TreasureHunt = () => {
     return (
       <div className="min-h-[100svh] flex items-start justify-center pt-2 bg-success-light relative overflow-hidden">
         <FloatingBackground />
-        <Card className="w-11/12 max-w-2xl bg-white border-none shadow-2xl bounce-in mt-2">
+        <Card className="w-11/12 max-w-2xl bg-white border-none shadow-2xl bounce-in">
           <CardContent className="p-8 text-center">
-            <div className="text-6xl mb-3">🗺️</div>
+            <div className="text-6xl -mt-2 mb-3">🗺️</div>
             <h1 className="text-2xl font-bold text-success-green mb-3">
               Code trouvé !
             </h1>
