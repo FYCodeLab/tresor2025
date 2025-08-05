@@ -117,7 +117,7 @@ const TreasureHunt = () => {
                 />
               </div>
             ) : (
-              <div className="bg-success-light p-4 rounded-lg mb-8 h-64">
+              <div className="bg-success-light p-4 rounded-lg mb-8 h-56">
                 <ScrollArea className="h-full w-full [&>div>div[style]]:!pr-6">
                   <div className="pr-4">
                     <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">
