@@ -100,7 +100,7 @@ const TreasureHunt = () => {
 
   if (currentState === "success") {
     return (
-      <div className="min-h-[100svh] flex items-center justify-center pt-4 bg-success-light relative overflow-hidden">
+      <div className="min-h-[100svh] flex items-start justify-center pt-2 bg-success-light relative overflow-hidden">
         <FloatingBackground />
         <Card className="w-11/12 max-w-2xl bg-white border-none shadow-2xl bounce-in">
           <CardContent className="p-8 text-center">
