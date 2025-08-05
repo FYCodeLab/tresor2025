@@ -52,6 +52,21 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				treasure: {
+					gold: 'hsl(var(--treasure-gold))',
+					purple: 'hsl(var(--treasure-purple))',
+					green: 'hsl(var(--treasure-green))',
+					blue: 'hsl(var(--treasure-blue))',
+					orange: 'hsl(var(--treasure-orange))'
+				},
+				error: {
+					red: 'hsl(var(--error-red))',
+					dark: 'hsl(var(--error-dark))'
+				},
+				success: {
+					green: 'hsl(var(--success-green))',
+					light: 'hsl(var(--success-light))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
