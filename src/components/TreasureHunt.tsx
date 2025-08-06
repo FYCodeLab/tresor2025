@@ -154,7 +154,7 @@ const TreasureHunt = () => {
                   style={{ transform: "translateZ(0)" }}
                 />
                 <p className="text-sm text-muted-foreground mt-2">
-                  If the audio does not start automatically, press ▶︎.
+                  Ecoute l'indice 🧏‍♂️
                 </p>
               </div>
             ) : (
