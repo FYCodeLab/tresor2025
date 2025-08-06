@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import FloatingBackground from "./FloatingBackground";
 
 interface CodeData {
@@ -13,7 +12,8 @@ interface CodeData {
 
 const TreasureHunt = () => {
   const [inputCode, setInputCode] = useState("");
-  const [currentState, setCurrentState] = useState<"input" | "error" | "success">("input");
+  const [currentState, setCurrentState] =
+    useState<"input" | "error" | "success">("input");
   const [codeData, setCodeData] = useState<CodeData[]>([]);
   const [foundContent, setFoundContent] = useState("");
   const [isShaking, setIsShaking] = useState(false);
@@ -21,19 +21,26 @@ const TreasureHunt = () => {
   // --- Audio handling ---
   const audioEl = useRef<HTMLAudioElement | null>(null);
 
+  // --- Scroll hint handling for long text ---
+  const textScrollerRef = useRef<HTMLDivElement | null>(null);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+
   const isImageUrl = (content: string) =>
     content.startsWith("http") &&
-    (content.includes(".jpg") || content.includes(".png") || content.includes(".gif") || content.includes(".jpeg"));
+    (content.includes(".jpg") ||
+      content.includes(".png") ||
+      content.includes(".gif") ||
+      content.includes(".jpeg"));
 
   const isAudioUrl = (content: string) =>
     /^https?:\/\//i.test(content) && /\.mp3(\?|#|$)/i.test(content);
 
-  // Try to auto-play after a successful match (user gesture friendly)
+  // Try to auto-play after a successful match (user-gesture friendly)
   useEffect(() => {
     if (currentState === "success" && isAudioUrl(foundContent) && audioEl.current) {
       audioEl.current.load();
       audioEl.current.play().catch(() => {
-        // Autoplay may be blocked; the visible controls below are the fallback.
+        // Autoplay may be blocked; visible controls below are the fallback.
       });
     }
   }, [currentState, foundContent]);
@@ -71,6 +78,31 @@ const TreasureHunt = () => {
     loadCodes();
   }, []);
 
+  // Detect overflow in the green text box and show a scroll hint until the user scrolls
+  useEffect(() => {
+    const el = textScrollerRef.current;
+    if (!el) return;
+
+    const checkOverflow = () => {
+      const hasOverflow = el.scrollHeight > el.clientHeight + 1;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+      setShowScrollHint(hasOverflow && !atBottom);
+    };
+
+    checkOverflow();
+
+    const onScroll = () => checkOverflow();
+    el.addEventListener("scroll", onScroll, { passive: true });
+
+    const ro = new ResizeObserver(checkOverflow);
+    ro.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+    };
+  }, [foundContent]);
+
   const handleSubmit = () => {
     const foundCode = codeData.find((item) => item.code === inputCode.trim());
 
@@ -100,10 +132,16 @@ const TreasureHunt = () => {
     return (
       <div className="min-h-[100svh] flex items-center justify-center bg-error-red relative overflow-hidden">
         <FloatingBackground />
-        <Card className={`w-11/12 max-w-md bg-error-dark border-none shadow-2xl ${isShaking ? "shake" : ""}`}>
+        <Card
+          className={`w-11/12 max-w-md bg-error-dark border-none shadow-2xl ${
+            isShaking ? "shake" : ""
+          }`}
+        >
           <CardContent className="p-8 text-center">
             <div className="text-6xl mb-6">💀</div>
-            <h1 className="text-4xl font-bold text-white mb-6 animate-pulse">MAUVAIS CODE</h1>
+            <h1 className="text-4xl font-bold text-white mb-6 animate-pulse">
+              MAUVAIS CODE
+            </h1>
             <p className="text-white/80 mb-8 text-lg">Essaie encore, aventurier !</p>
             <Button
               onClick={handleTryAgain}
@@ -134,7 +172,9 @@ const TreasureHunt = () => {
         >
           <CardContent className="p-8 text-center">
             <div className="text-6xl -mt-2 mb-3">🗺️</div>
-            <h1 className="text-2xl font-bold text-success-green mb-3">Code trouvé !</h1>
+            <h1 className="text-2xl font-bold text-success-green mb-3">
+              Code trouvé !
+            </h1>
 
             {isImageUrl(foundContent) ? (
               <div className="mb-8">
@@ -154,18 +194,32 @@ const TreasureHunt = () => {
                   style={{ transform: "translateZ(0)" }}
                 />
                 <p className="text-sm text-muted-foreground mt-2">
-                  Ecoute l'indice 🧏‍♂️
+                  If the audio does not start automatically, press ▶︎.
                 </p>
               </div>
             ) : (
-              <div className="bg-success-light p-4 rounded-lg mb-8 h-56">
-                <ScrollArea className="h-full w-full [&>div>div[style]]:!pr-6">
-                  <div className="pr-4">
-                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">
-                      {foundContent}
-                    </p>
+              // Text case with persistent scroll hint
+              <div className="relative mb-8">
+                <div
+                  ref={textScrollerRef}
+                  className="bg-success-light p-4 rounded-lg h-56 overflow-y-auto"
+                  style={{
+                    scrollbarGutter: "stable",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
+                  <p className="text-foreground text-sm leading-relaxed whitespace-pre-line pr-4">
+                    {foundContent}
+                  </p>
+                </div>
+
+                {showScrollHint && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 flex items-end justify-center rounded-b-lg bg-gradient-to-t from-success-light to-transparent">
+                    <div className="mb-2 px-2 py-1 text-xs font-medium rounded-full bg-white/85 shadow">
+                      Scroll for more ↓
+                    </div>
                   </div>
-                </ScrollArea>
+                )}
               </div>
             )}
 
@@ -188,8 +242,12 @@ const TreasureHunt = () => {
       <Card className="w-11/12 max-w-md bg-white border-none shadow-2xl pulse-glow">
         <CardContent className="p-8 text-center">
           <div className="text-6xl mb-6">🗝️</div>
-          <h1 className="text-3xl font-bold text-treasure-gold mb-6">Chasse au Trésor</h1>
-          <p className="text-muted-foreground mb-8 text-lg">Entre le code secret pour ton prochain indice !</p>
+          <h1 className="text-3xl font-bold text-treasure-gold mb-6">
+            Chasse au Trésor
+          </h1>
+          <p className="text-muted-foreground mb-8 text-lg">
+            Entre le code secret pour ton prochain indice !
+          </p>
           <div className="space-y-6">
             <Input
               type="text"
