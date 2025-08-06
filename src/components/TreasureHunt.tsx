@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+// FILE: src/components/TreasureHunt.tsx
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +18,26 @@ const TreasureHunt = () => {
   const [foundContent, setFoundContent] = useState("");
   const [isShaking, setIsShaking] = useState(false);
 
-  // Load CSV data
+  // --- Audio handling ---
+  const audioEl = useRef<HTMLAudioElement | null>(null);
+  const isImageUrl = (content: string) =>
+    content.startsWith("http") &&
+    (content.includes(".jpg") || content.includes(".png") || content.includes(".gif") || content.includes(".jpeg"));
+
+  const isAudioUrl = (content: string) =>
+    /^https?:\/\//i.test(content) && /\.mp3(\?|#|$)/i.test(content);
+
+  // Try to auto-play after a successful match (user gesture friendly)
+  useEffect(() => {
+    if (currentState === "success" && isAudioUrl(foundContent) && audioEl.current) {
+      audioEl.current.load();
+      audioEl.current.play().catch(() => {
+        // Autoplay may be blocked; the visible controls below are the fallback.
+      });
+    }
+  }, [currentState, foundContent]);
+
+  // Load CSV data (keeps your BASE_URL logic for prod paths)
   useEffect(() => {
     const loadCodes = async () => {
       try {
@@ -28,18 +48,18 @@ const TreasureHunt = () => {
         const csvText = await response.text();
         const lines = csvText.split("\n").slice(1); // Skip header
         const data = lines
-          .filter(line => line.trim())
-          .map(line => {
+          .filter((line) => line.trim())
+          .map((line) => {
             const commaIndex = line.indexOf(",");
             if (commaIndex === -1) return null;
 
             const code = line.substring(0, commaIndex).trim();
-            const content = line.substring(commaIndex + 1).replace(/^"(.*)"$/, '$1').trim();
+            const content = line
+              .substring(commaIndex + 1)
+              .replace(/^"(.*)"$/, "$1")
+              .trim();
 
-            return {
-              code,
-              content
-            };
+            return { code, content };
           })
           .filter(Boolean) as CodeData[];
         setCodeData(data);
@@ -51,7 +71,7 @@ const TreasureHunt = () => {
   }, []);
 
   const handleSubmit = () => {
-    const foundCode = codeData.find(item => item.code === inputCode.trim());
+    const foundCode = codeData.find((item) => item.code === inputCode.trim());
 
     if (foundCode) {
       setFoundContent(foundCode.content);
@@ -64,28 +84,26 @@ const TreasureHunt = () => {
   };
 
   const handleTryAgain = () => {
+    // Stop audio if playing
+    if (audioEl.current) {
+      audioEl.current.pause();
+      audioEl.current.currentTime = 0;
+    }
     setCurrentState("input");
     setInputCode("");
     setFoundContent("");
   };
 
-  const isImageUrl = (content: string) => {
-    return content.startsWith("http") && (content.includes(".jpg") || content.includes(".png") || content.includes(".gif") || content.includes(".jpeg"));
-  };
-
+  // --- Screens ---
   if (currentState === "error") {
     return (
       <div className="min-h-[100svh] flex items-center justify-center bg-error-red relative overflow-hidden">
         <FloatingBackground />
-        <Card className={`w-11/12 max-w-md bg-error-dark border-none shadow-2xl ${isShaking ? 'shake' : ''}`}>
+        <Card className={`w-11/12 max-w-md bg-error-dark border-none shadow-2xl ${isShaking ? "shake" : ""}`}>
           <CardContent className="p-8 text-center">
             <div className="text-6xl mb-6">💀</div>
-            <h1 className="text-4xl font-bold text-white mb-6 animate-pulse">
-              MAUVAIS CODE
-            </h1>
-            <p className="text-white/80 mb-8 text-lg">
-              Essaie encore, aventurier !
-            </p>
+            <h1 className="text-4xl font-bold text-white mb-6 animate-pulse">MAUVAIS CODE</h1>
+            <p className="text-white/80 mb-8 text-lg">Essaie encore, aventurier !</p>
             <Button
               onClick={handleTryAgain}
               className="bg-white text-error-dark hover:bg-white/90 font-bold text-lg py-6 px-8 rounded-xl transform transition-all duration-200 hover:scale-105"
@@ -105,9 +123,8 @@ const TreasureHunt = () => {
         <Card className="w-11/12 max-w-2xl bg-white border-none shadow-2xl bounce-in">
           <CardContent className="p-8 text-center">
             <div className="text-6xl -mt-2 mb-3">🗺️</div>
-            <h1 className="text-2xl font-bold text-success-green mb-3">
-              Code trouvé !
-            </h1>
+            <h1 className="text-2xl font-bold text-success-green mb-3">Code trouvé !</h1>
+
             {isImageUrl(foundContent) ? (
               <div className="mb-8">
                 <img
@@ -116,17 +133,23 @@ const TreasureHunt = () => {
                   className="max-w-full h-auto rounded-lg shadow-lg mx-auto"
                 />
               </div>
+            ) : isAudioUrl(foundContent) ? (
+              <div className="mb-8">
+                <audio ref={audioEl} controls src={foundContent} className="w-full" />
+                <p className="text-sm text-muted-foreground mt-2">
+                  If the audio does not start automatically, press ▶︎.
+                </p>
+              </div>
             ) : (
               <div className="bg-success-light p-4 rounded-lg mb-8 h-56">
                 <ScrollArea className="h-full w-full [&>div>div[style]]:!pr-6">
                   <div className="pr-4">
-                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">
-                      {foundContent}
-                    </p>
+                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">{foundContent}</p>
                   </div>
                 </ScrollArea>
               </div>
             )}
+
             <Button
               onClick={handleTryAgain}
               className="bg-success-green hover:bg-success-green/90 text-white font-bold text-lg py-6 px-8 rounded-xl transform transition-all duration-200 hover:scale-105"
@@ -139,18 +162,15 @@ const TreasureHunt = () => {
     );
   }
 
+  // Input screen
   return (
     <div className="min-h-[100svh] flex items-center justify-center bg-background relative overflow-hidden">
       <FloatingBackground />
       <Card className="w-11/12 max-w-md bg-white border-none shadow-2xl pulse-glow">
         <CardContent className="p-8 text-center">
           <div className="text-6xl mb-6">🗝️</div>
-          <h1 className="text-3xl font-bold text-treasure-gold mb-6">
-            Chasse au Trésor
-          </h1>
-          <p className="text-muted-foreground mb-8 text-lg">
-            Entre le code& secret pour ton prochain indice !
-          </p>
+          <h1 className="text-3xl font-bold text-treasure-gold mb-6">Chasse au Trésor</h1>
+          <p className="text-muted-foreground mb-8 text-lg">Entre le codexx secret pour ton prochain indice !</p>
           <div className="space-y-6">
             <Input
               type="text"
