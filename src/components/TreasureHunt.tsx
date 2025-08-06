@@ -216,7 +216,7 @@ const TreasureHunt = () => {
                 {showScrollHint && (
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 flex items-end justify-center rounded-b-lg bg-gradient-to-t from-success-light to-transparent">
                     <div className="mb-2 px-2 py-1 text-xs font-medium rounded-full bg-white/85 shadow">
-                      Scroll for more ↓
+                      ⬇️
                     </div>
                   </div>
                 )}
