@@ -20,6 +20,7 @@ const TreasureHunt = () => {
 
   // --- Audio handling ---
   const audioEl = useRef<HTMLAudioElement | null>(null);
+
   const isImageUrl = (content: string) =>
     content.startsWith("http") &&
     (content.includes(".jpg") || content.includes(".png") || content.includes(".gif") || content.includes(".jpeg"));
@@ -117,10 +118,20 @@ const TreasureHunt = () => {
   }
 
   if (currentState === "success") {
+    const successWrapperBase =
+      "min-h-[100svh] flex items-start justify-center pt-2 bg-success-light relative";
+    const successWrapper = `${successWrapperBase} ${
+      isAudioUrl(foundContent) ? "" : "overflow-hidden"
+    }`;
+
     return (
-      <div className="min-h-[100svh] flex items-start justify-center pt-2 bg-success-light relative overflow-hidden">
+      <div className={successWrapper}>
         <FloatingBackground />
-        <Card className="w-11/12 max-w-2xl bg-white border-none shadow-2xl bounce-in">
+        <Card
+          className={`w-11/12 max-w-2xl bg-white border-none shadow-2xl relative z-20 ${
+            isAudioUrl(foundContent) ? "" : "bounce-in"
+          }`}
+        >
           <CardContent className="p-8 text-center">
             <div className="text-6xl -mt-2 mb-3">🗺️</div>
             <h1 className="text-2xl font-bold text-success-green mb-3">Code trouvé !</h1>
@@ -135,7 +146,13 @@ const TreasureHunt = () => {
               </div>
             ) : isAudioUrl(foundContent) ? (
               <div className="mb-8">
-                <audio ref={audioEl} controls src={foundContent} className="w-full" />
+                <audio
+                  ref={audioEl}
+                  controls
+                  src={(foundContent ?? "").trim()}
+                  className="w-full block min-h-[44px] bg-gray-100 rounded border border-gray-300"
+                  style={{ transform: "translateZ(0)" }}
+                />
                 <p className="text-sm text-muted-foreground mt-2">
                   If the audio does not start automatically, press ▶︎.
                 </p>
@@ -144,7 +161,9 @@ const TreasureHunt = () => {
               <div className="bg-success-light p-4 rounded-lg mb-8 h-56">
                 <ScrollArea className="h-full w-full [&>div>div[style]]:!pr-6">
                   <div className="pr-4">
-                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">{foundContent}</p>
+                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">
+                      {foundContent}
+                    </p>
                   </div>
                 </ScrollArea>
               </div>
@@ -170,7 +189,7 @@ const TreasureHunt = () => {
         <CardContent className="p-8 text-center">
           <div className="text-6xl mb-6">🗝️</div>
           <h1 className="text-3xl font-bold text-treasure-gold mb-6">Chasse au Trésor</h1>
-          <p className="text-muted-foreground mb-8 text-lg">Entre le codexx secret pour ton prochain indice !</p>
+          <p className="text-muted-foreground mb-8 text-lg">Entre le code secret pour ton prochain indice !</p>
           <div className="space-y-6">
             <Input
               type="text"
