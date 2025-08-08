@@ -3,16 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Pas d’écran ! – Tap-tape v7.2.1</title>
+<title>Pas d’écran ! – Tap-tape v7.2.2</title>
 <style>
   *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   html,body{
     margin:0;height:100%;
     background:#72d6ff;
     font-family:'Comic Sans MS','Trebuchet MS',system-ui,sans-serif;
-    overflow:hidden;                  /* no scroll */
-    overscroll-behavior:none;         /* no rubber-band */
-    -webkit-overflow-scrolling:auto;
+    overflow:hidden; overscroll-behavior:none; -webkit-overflow-scrolling:auto;
   }
   #ui{
     position:fixed;top:0;left:0;right:0;padding:8px 10px;
@@ -29,7 +27,7 @@
 </head>
 <body>
   <div id="ui">
-    <div id="title">PAS D’ÉCRAN ! – v7.2.1</div>
+    <div id="title">PAS D’ÉCRAN ! – v7.2.2</div>
     <div id="stats">
       <span>⏱️ <span id="time">120</span>s</span>
       <span>✅ <span id="good">0</span></span>
@@ -41,7 +39,7 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ===== Pas d’écran ! – v7.2.1 ===== */
+/* ===== Pas d’écran ! – v7.2.2 ===== */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d',{alpha:false});
 const ui = {
@@ -69,7 +67,7 @@ function beep(f=700,d=0.08,t='square',v=0.2){ if(!ac) return; const T=ac.current
 function playGood(){ beep(880,0.08,'triangle',0.25); setTimeout(()=>beep(1320,0.06,'triangle',0.22),60); }
 function playBad(){ beep(200,0.12,'sawtooth',0.25); setTimeout(()=>beep(140,0.14,'sawtooth',0.22),80); }
 
-// ---------- Images facultatives (ne cassent rien si absentes) ----------
+// ---------- Images facultatives ----------
 function tryImage(src){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
 const ASSETS = {
   kids: ['juju.png','suz.png','leo.png','paul.png','raph.png'].map(n=>'assets/'+n),
@@ -119,7 +117,7 @@ function drawSplash(){
   ctx.lineWidth=10; ctx.strokeStyle='#000'; roundedRect(0,0,bw,bh,20,false,true);
   ctx.fillStyle='#fff'; ctx.textAlign='center';
   ctx.font = `${Math.floor(bh*0.14)}px Impact, Arial Black, sans-serif`;
-  ctx.fillText("PAS D'ÉCRAN ! – v7.2.1", bw/2, bh*0.33);
+  ctx.fillText("PAS D'ÉCRAN ! – v7.2.2", bw/2, bh*0.33);
   ctx.font = `${Math.floor(bh*0.07)}px Arial Black, sans-serif`;
   ctx.fillText("Atteignez 20 points pour gagner", bw/2, bh*0.55);
   ctx.restore();
@@ -130,7 +128,18 @@ let running=false, gameOver=false, tLeft=120, good=0, bad=0;
 let lastSpawnAt=0, lastFrame=0, lastUnauthorizedSeen=0;
 let entities=[], puffs=[];
 function pick(a){ return a[Math.floor(Math.random()*a.length)]||null; }
-function randomPos(){ const m=70; return {x:Math.random()*(W-2*m)+m, y:Math.random()*(H-2*m)+m}; }
+
+// marge dynamique pour rester cliquable (loin des bords + place pour l'écran)
+function safeRandomPosForSize(size){
+  const bottomSafe = Math.max(90, H*0.08); // évite la barre Safari
+  const left = size*0.6;
+  const right = W - size*1.2;            // car écran décalé de +0.65*s
+  const top = size*0.6 + 10;
+  const bottom = H - bottomSafe - size*0.6;
+  const x = Math.random()*(right-left)+left;
+  const y = Math.random()*(bottom-top)+top;
+  return {x,y};
+}
 
 function progress(){ return 1 - (tLeft/120); }
 function lerp(a,b,t){ return a + (b-a)*t; }
@@ -151,16 +160,15 @@ function tooClose(p, size, others){
 // ---------- Apparitions ----------
 function spawn(forceUnauthorized=false){
   const size = Math.max(90, Math.min(W,H)*0.18) * (0.85 + Math.random()*0.3);
-  // position propre
   let pos=null;
   for(let a=0;a<25;a++){
-    const c = randomPos();
+    const c = safeRandomPosForSize(size);
     if (!tooClose(c, size, entities)) { pos=c; break; }
   }
-  if(!pos) pos=randomPos();
+  if(!pos) pos=safeRandomPosForSize(size);
 
   let kind = Math.random();
-  if (forceUnauthorized) kind = 0; // forcer un “mauvais” écran
+  if (forceUnauthorized) kind = 0;
 
   if (kind < 0.65){
     const kidImg = pick(IMGS.kids);
@@ -261,7 +269,7 @@ function drawPuffs(dt){
   }
 }
 
-// ---------- HUD + barre de progression (0→20) ----------
+// ---------- HUD + barre de progression ----------
 function drawHUD(){
   const pad = Math.max(12, Math.min(W,H)*0.02);
   const bw = W - pad*2, bh = Math.max(48, Math.min(W,H)*0.08);
@@ -271,7 +279,7 @@ function drawHUD(){
   ctx.lineWidth=4; ctx.strokeStyle='#000'; ctx.strokeRect(0,0,bw,bh);
   ctx.fillStyle='#fff'; ctx.textBaseline='middle';
   ctx.font = Math.floor(bh*0.55)+'px Arial Black, Impact, sans-serif';
-  ctx.fillText("PAS D'ÉCRAN ! – v7.2.1", pad*0.3, bh/2);
+  ctx.fillText("PAS D'ÉCRAN ! – v7.2.2", pad*0.3, bh/2);
   const stats = `⏱ ${tLeft}s   ✅ ${good}   ❌ ${bad}`;
   const w = ctx.measureText(stats).width;
   ctx.fillText(stats, bw - w - pad*0.3, bh/2);
@@ -293,11 +301,9 @@ function drawHUD(){
 function loop(now){
   if (!running) return;
 
-  // spawn “catch-up”
   const spawnDelay = currentSpawnDelay();
   if (!lastSpawnAt) lastSpawnAt = now;
   while (now - lastSpawnAt > spawnDelay) {
-    // forcer un non-autorisé si on n’en a pas vu depuis 1.5 s
     const force = (now - lastUnauthorizedSeen) > 1500;
     if (entities.length < currentMaxEntities()) spawn(force);
     lastSpawnAt += spawnDelay;
@@ -306,17 +312,14 @@ function loop(now){
   const dt = lastFrame ? (now - lastFrame) : 16;
   lastFrame = now;
 
-  // retirer après hit / fin de vie (frame suivante)
   entities = entities.filter(e => (now - e.born) < e.life && !e.hit);
 
-  // draw
   ctx.fillStyle='#72d6ff'; ctx.fillRect(0,0,W,H);
   hills();
   try { for (const e of entities) drawEntity(e, now); } catch(e){ /* guard */ }
   drawHUD();
   drawPuffs(dt);
 
-  // fin (20 points)
   if ((good - bad) >= 20){ endOverlay(); return; }
 
   requestAnimationFrame(loop);
@@ -359,7 +362,7 @@ function countdown(){
   setTimeout(()=>{ tLeft--; ui.time.textContent=tLeft; countdown(); }, 1000);
 }
 
-// ---------- Input : tête OU appareil ; no scroll/drag ----------
+// ---------- Input : tête OU appareil ; blocage gestes ----------
 function handleTapClientXY(clientX, clientY){
   if (!running || gameOver) return;
   const rect = canvas.getBoundingClientRect();
@@ -369,28 +372,34 @@ function handleTapClientXY(clientX, clientY){
   const now = performance.now();
 
   let hit=null, ok=false;
+  // test précis (wobble) + petite tolérance
   for (let i=entities.length-1;i>=0;i--){
     const e=entities[i];
-    // tête avec wobble
     const wob = Math.sin((now - e.born)/120)*4;
-    const hx = e.x + wob, hy = e.y;
-    const headHit = Math.hypot(x - hx, y - hy) <= e.size*0.5;
-    // zone écran élargie (±15%)
+    const hx = e.x + wob, hy = e.y, s=e.size;
+
+    const headHit = Math.hypot(x - hx, y - hy) <= s*0.52; // +4% tolérance
+
     let devHit=false;
     if (e.type==='kid'){
-      const dx = hx + e.size*0.65, dy = hy + e.size*0.05, s = e.size*1.15;
-      if (x>=dx-s*0.5 && x<=dx+s*0.5 && y>=dy-s*0.5 && y<=dy+s*0.5) devHit=true;
+      const dx = hx + s*0.65, dy = hy + s*0.05, sw = s*1.15; // +15%
+      if (x>=dx-sw*0.5 && x<=dx+sw*0.5 && y>=dy-sw*0.5 && y<=dy+sw*0.5) devHit=true;
     }
-    if (headHit || devHit){ hit=e; ok=(e.type==='kid' && e.status==='unauthorized'); break; }
+
+    // Fallback indulgent si très proche de la tête (<=60%)
+    const near = Math.hypot(x - hx, y - hy) <= s*0.60;
+
+    if (headHit || devHit || near){
+      hit=e; ok=(e.type==='kid' && e.status==='unauthorized'); break;
+    }
   }
   if (hit){
     if (ok){ good++; ui.good.textContent=good; playGood(); addPuff(x,y,'#22c55e'); }
     else   { bad++;  ui.bad.textContent =bad; playBad();  addPuff(x,y,'#ff3e3e'); }
-    hit.hit = true; // retire au frame suivant
+    hit.hit = true; // retiré au frame suivant
   }
 }
 
-// Pointer events + touch (bloque scroll/gestes)
 canvas.addEventListener('pointerdown', e => { e.preventDefault(); handleTapClientXY(e.clientX, e.clientY); });
 canvas.addEventListener('touchstart', e => { if(!running||gameOver) return; e.preventDefault(); const t=e.changedTouches[0]; handleTapClientXY(t.clientX,t.clientY); }, {passive:false});
 ['touchmove','touchend','touchcancel','gesturestart','gesturechange','gestureend']
