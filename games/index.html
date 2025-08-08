@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Pas d’écran ! – Tap-tape (lite)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="ui">
+    <div id="title">PAS D’ÉCRAN !</div>
+    <div id="stats">
+      <span>⏱️ <span id="time">120</span>s</span>
+      <span>✅ Bons: <span id="good">0</span></span>
+      <span>❌ Oups: <span id="bad">0</span></span>
+    </div>
+    <button id="playBtn">▶ Jouer (2 min)</button>
+    <button id="replayBtn" disabled>↻ Rejouer</button>
+    <div id="rules">
+      <p>Version <b>sans images</b>. Ajoutez vos fichiers dans <code>assets/</code> (voir <code>assets/README.txt</code>).</p>
+      <p>Rappel : tapez uniquement les <b>écrans NON autorisés</b>. N’appuyez pas sur les parents ni les enfants OK/sans écran.</p>
+    </div>
+  </div>
+
+  <canvas id="game" width="800" height="600"></canvas>
+  <script src="game.js"></script>
+</body>
+</html>
