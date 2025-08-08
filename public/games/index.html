@@ -3,22 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Pas d’écran ! – Tap-tape v7.1 (single-file)</title>
+<title>Pas d’écran ! – Tap-tape v7.2.1</title>
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#72d6ff;font-family:'Comic Sans MS','Trebuchet MS',system-ui,sans-serif;}
-  #ui{position:fixed;top:0;left:0;right:0;padding:8px 10px;background:#00000099;color:#fff;
-      backdrop-filter:blur(3px);display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:2}
+  *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  html,body{
+    margin:0;height:100%;
+    background:#72d6ff;
+    font-family:'Comic Sans MS','Trebuchet MS',system-ui,sans-serif;
+    overflow:hidden;                  /* no scroll */
+    overscroll-behavior:none;         /* no rubber-band */
+    -webkit-overflow-scrolling:auto;
+  }
+  #ui{
+    position:fixed;top:0;left:0;right:0;padding:8px 10px;
+    background:#00000099;color:#fff;backdrop-filter:blur(3px);
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:2
+  }
   #title{font-weight:900;letter-spacing:1px;padding:2px 8px;border:3px solid #fff;border-radius:8px;background:#ff3e3e;text-shadow:1px 1px 0 #000}
   #stats{display:flex;gap:12px;font-weight:700}
   #playBtn,#replayBtn{padding:8px 12px;border:4px solid #000;border-radius:12px;background:#ffd400;font-weight:900;box-shadow:0 4px 0 #000;cursor:pointer}
   #playBtn[disabled],#replayBtn[disabled]{opacity:.6;cursor:not-allowed;box-shadow:none}
+  #game{position:fixed;inset:0;width:100%;height:100%;touch-action:none;-ms-touch-action:none}
   .playing #ui{display:none}
 </style>
 </head>
 <body>
   <div id="ui">
-    <div id="title">PAS D’ÉCRAN ! – v7.1</div>
+    <div id="title">PAS D’ÉCRAN ! – v7.2.1</div>
     <div id="stats">
       <span>⏱️ <span id="time">120</span>s</span>
       <span>✅ <span id="good">0</span></span>
@@ -30,7 +41,7 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ===== Pas d’écran ! – v7.1 ===== */
+/* ===== Pas d’écran ! – v7.2.1 ===== */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d',{alpha:false});
 const ui = {
@@ -58,7 +69,7 @@ function beep(f=700,d=0.08,t='square',v=0.2){ if(!ac) return; const T=ac.current
 function playGood(){ beep(880,0.08,'triangle',0.25); setTimeout(()=>beep(1320,0.06,'triangle',0.22),60); }
 function playBad(){ beep(200,0.12,'sawtooth',0.25); setTimeout(()=>beep(140,0.14,'sawtooth',0.22),80); }
 
-// ---------- Images facultatives ----------
+// ---------- Images facultatives (ne cassent rien si absentes) ----------
 function tryImage(src){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
 const ASSETS = {
   kids: ['juju.png','suz.png','leo.png','paul.png','raph.png'].map(n=>'assets/'+n),
@@ -108,28 +119,26 @@ function drawSplash(){
   ctx.lineWidth=10; ctx.strokeStyle='#000'; roundedRect(0,0,bw,bh,20,false,true);
   ctx.fillStyle='#fff'; ctx.textAlign='center';
   ctx.font = `${Math.floor(bh*0.14)}px Impact, Arial Black, sans-serif`;
-  ctx.fillText("PAS D'ÉCRAN ! – v7.1", bw/2, bh*0.33);
+  ctx.fillText("PAS D'ÉCRAN ! – v7.2.1", bw/2, bh*0.33);
   ctx.font = `${Math.floor(bh*0.07)}px Arial Black, sans-serif`;
   ctx.fillText("Atteignez 20 points pour gagner", bw/2, bh*0.55);
   ctx.restore();
 }
 
-// ---------- État du jeu ----------
+// ---------- État / difficulté (identique v7) ----------
 let running=false, gameOver=false, tLeft=120, good=0, bad=0;
-let lastSpawnAt=0, lastFrame=0;
+let lastSpawnAt=0, lastFrame=0, lastUnauthorizedSeen=0;
 let entities=[], puffs=[];
-
 function pick(a){ return a[Math.floor(Math.random()*a.length)]||null; }
 function randomPos(){ const m=70; return {x:Math.random()*(W-2*m)+m, y:Math.random()*(H-2*m)+m}; }
 
-// Difficulté (identique v5)
 function progress(){ return 1 - (tLeft/120); }
 function lerp(a,b,t){ return a + (b-a)*t; }
 function currentLife(){ return lerp(3200, 900, progress()); }
 function currentSpawnDelay(){ return lerp(900, 350, progress()); }
 function currentMaxEntities(){ return Math.round(lerp(4, 9, progress())); }
 
-// --- Chevauchement minimal ---
+// ---------- Chevauchement minimal ----------
 function tooClose(p, size, others){
   for(const o of others){
     const minDist = (size + o.size) * 0.62;
@@ -139,10 +148,10 @@ function tooClose(p, size, others){
   return false;
 }
 
-// --- Apparitions ---
-function spawn(){
+// ---------- Apparitions ----------
+function spawn(forceUnauthorized=false){
   const size = Math.max(90, Math.min(W,H)*0.18) * (0.85 + Math.random()*0.3);
-  // Cherche une position “propre”
+  // position propre
   let pos=null;
   for(let a=0;a<25;a++){
     const c = randomPos();
@@ -150,15 +159,18 @@ function spawn(){
   }
   if(!pos) pos=randomPos();
 
-  const r = Math.random();
-  if (r < 0.65){
+  let kind = Math.random();
+  if (forceUnauthorized) kind = 0; // forcer un “mauvais” écran
+
+  if (kind < 0.65){
     const kidImg = pick(IMGS.kids);
     let status, deviceImg=null, authorizedImg=null;
     const rd = Math.random();
-    if (rd < 0.5){ status='unauthorized'; deviceImg = pick([IMGS.devices.phone, IMGS.devices.ipad, IMGS.devices.tv]); }
+    if (rd < 0.5 || forceUnauthorized){ status='unauthorized'; deviceImg = pick([IMGS.devices.phone, IMGS.devices.ipad, IMGS.devices.tv]); }
     else if (rd < 0.75){ status='authorized'; authorizedImg = pick([IMGS.devices.phonex, IMGS.devices.ipadx]); }
     else { status='none'; }
     entities.push(makeEntity('kid', kidImg, pos, size, status, deviceImg, authorizedImg));
+    if (status==='unauthorized') lastUnauthorizedSeen = performance.now();
   } else {
     const img = pick(IMGS.parents);
     entities.push(makeEntity('parent', img, pos, size, 'angry', null, null));
@@ -169,7 +181,7 @@ function makeEntity(type, img, pos, size, status, device, authorizedImg){
     x:pos.x, y:pos.y, size, born:performance.now(), life:currentLife(), hit:false };
 }
 
-// --- Dessins ---
+// ---------- Dessin entités ----------
 function drawCenteredImage(img, x, y, w, h){ ctx.drawImage(img, x, y, w, h); }
 function drawDevicePlaceholder(cx, cy, size, color){
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.2);
@@ -192,7 +204,7 @@ function band(cx, cy, w, color){
 }
 function drawEntity(e, now){
   const wob = Math.sin((now - e.born)/120)*4;
-  const s = e.size, devS=s;
+  const s = e.size, devS = s;
 
   // ombre
   ctx.save(); ctx.translate(e.x, e.y + s*0.55); ctx.scale(1,0.35);
@@ -249,23 +261,21 @@ function drawPuffs(dt){
   }
 }
 
-// ---------- HUD + barre de progression ----------
+// ---------- HUD + barre de progression (0→20) ----------
 function drawHUD(){
   const pad = Math.max(12, Math.min(W,H)*0.02);
   const bw = W - pad*2, bh = Math.max(48, Math.min(W,H)*0.08);
   ctx.save(); ctx.translate(pad,pad);
 
-  // bandeau
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,bw,bh);
   ctx.lineWidth=4; ctx.strokeStyle='#000'; ctx.strokeRect(0,0,bw,bh);
   ctx.fillStyle='#fff'; ctx.textBaseline='middle';
   ctx.font = Math.floor(bh*0.55)+'px Arial Black, Impact, sans-serif';
-  ctx.fillText("PAS D'ÉCRAN ! – v7.1", pad*0.3, bh/2);
+  ctx.fillText("PAS D'ÉCRAN ! – v7.2.1", pad*0.3, bh/2);
   const stats = `⏱ ${tLeft}s   ✅ ${good}   ❌ ${bad}`;
   const w = ctx.measureText(stats).width;
   ctx.fillText(stats, bw - w - pad*0.3, bh/2);
 
-  // barre 0→20
   const total = Math.max(0, good - bad);
   const maxScore = 20;
   const ratio = Math.min(1, total/maxScore);
@@ -273,8 +283,6 @@ function drawHUD(){
   ctx.fillStyle='#555'; ctx.fillRect(0,barY,barW,barH);
   ctx.fillStyle='#22c55e'; ctx.fillRect(0,barY,barW*ratio,barH);
   ctx.lineWidth=3; ctx.strokeStyle='#000'; ctx.strokeRect(0,barY,barW,barH);
-
-  // score numérique sous la barre
   ctx.fillStyle='#fff'; ctx.font='bold 20px Arial Black, Impact, sans-serif';
   ctx.textAlign='left'; ctx.fillText(`SCORE: ${good-bad}`, 0, barY + barH + 22);
 
@@ -284,38 +292,40 @@ function drawHUD(){
 // ---------- Boucle robuste ----------
 function loop(now){
   if (!running) return;
-  // rattrapage spawn (si frame saute)
+
+  // spawn “catch-up”
   const spawnDelay = currentSpawnDelay();
   if (!lastSpawnAt) lastSpawnAt = now;
   while (now - lastSpawnAt > spawnDelay) {
-    if (entities.length < currentMaxEntities()) spawn();
+    // forcer un non-autorisé si on n’en a pas vu depuis 1.5 s
+    const force = (now - lastUnauthorizedSeen) > 1500;
+    if (entities.length < currentMaxEntities()) spawn(force);
     lastSpawnAt += spawnDelay;
   }
 
   const dt = lastFrame ? (now - lastFrame) : 16;
   lastFrame = now;
 
-  // cueillette “propre” (retire au frame SUIVANT après hit)
+  // retirer après hit / fin de vie (frame suivante)
   entities = entities.filter(e => (now - e.born) < e.life && !e.hit);
 
-  // dessin
+  // draw
   ctx.fillStyle='#72d6ff'; ctx.fillRect(0,0,W,H);
   hills();
-  try { for (const e of entities) drawEntity(e, now); } catch(e){ /* garde-fou */ }
+  try { for (const e of entities) drawEntity(e, now); } catch(e){ /* guard */ }
   drawHUD();
   drawPuffs(dt);
 
-  // fin
-  if ((good - bad) >= 20){ gameOver=true; endOverlay(); return; }
+  // fin (20 points)
+  if ((good - bad) >= 20){ endOverlay(); return; }
 
   requestAnimationFrame(loop);
 }
 
-// Écran de fin non bloquant
+// ---------- Overlay de fin ----------
 function endOverlay(){
-  running=false;
+  running=false; gameOver=true;
   const msg = `Bravo ! Score: ${good-bad}`;
-  const pad = Math.max(12, Math.min(W,H)*0.02);
   const bw = Math.min(W*0.8, 820), bh = Math.min(H*0.45, 360);
   const x=(W-bw)/2, y=(H-bh)/2;
   ctx.save();
@@ -331,58 +341,60 @@ function endOverlay(){
   ui.replayBtn.disabled = false;
 }
 
-// ---------- Contrôles ----------
+// ---------- Démarrage / timers ----------
 function start(){
   document.body.classList.add('playing');
   ensureAudio();
   tLeft=120; good=0; bad=0; gameOver=false;
   ui.time.textContent=tLeft; ui.good.textContent=good; ui.bad.textContent=bad;
-  entities.length=0; puffs.length=0; lastSpawnAt=0; lastFrame=0; running=true;
-  ui.playBtn.disabled = true; ui.replayBtn.disabled = false;
+  entities.length=0; puffs.length=0; lastSpawnAt=0; lastFrame=0; lastUnauthorizedSeen=performance.now();
+  running=true; ui.playBtn.disabled=true; ui.replayBtn.disabled=false;
   ctx.clearRect(0,0,W,H);
   countdown(); requestAnimationFrame(loop);
 }
 function restart(){ running=false; drawSplash(); start(); }
-
 function countdown(){
-  if (!running) return;
-  if (gameOver) return;
-  if (tLeft<=0){ gameOver=true; endOverlay(); return; }
+  if (!running || gameOver) return;
+  if (tLeft<=0){ endOverlay(); return; }
   setTimeout(()=>{ tLeft--; ui.time.textContent=tLeft; countdown(); }, 1000);
 }
 
-// Clic (tête OU appareil)
-canvas.addEventListener('pointerdown', (ev)=>{
+// ---------- Input : tête OU appareil ; no scroll/drag ----------
+function handleTapClientXY(clientX, clientY){
   if (!running || gameOver) return;
   const rect = canvas.getBoundingClientRect();
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const x = (ev.clientX - rect.left) * dpr;
-  const y = (ev.clientY - rect.top) * dpr;
+  const dpr  = Math.min(2, window.devicePixelRatio || 1);
+  const x = (clientX - rect.left) * dpr;
+  const y = (clientY - rect.top)  * dpr;
+  const now = performance.now();
 
   let hit=null, ok=false;
   for (let i=entities.length-1;i>=0;i--){
     const e=entities[i];
-    // tête
-    const headHit = Math.hypot(x - e.x, y - e.y) <= e.size*0.5;
-    // appareil (si enfant)
+    // tête avec wobble
+    const wob = Math.sin((now - e.born)/120)*4;
+    const hx = e.x + wob, hy = e.y;
+    const headHit = Math.hypot(x - hx, y - hy) <= e.size*0.5;
+    // zone écran élargie (±15%)
     let devHit=false;
     if (e.type==='kid'){
-      const dx = e.x + e.size*0.65, dy = e.y + e.size*0.05, s = e.size;
-      if (x >= dx - s*0.5 && x <= dx + s*0.5 && y >= dy - s*0.5 && y <= dy + s*0.5) devHit=true;
+      const dx = hx + e.size*0.65, dy = hy + e.size*0.05, s = e.size*1.15;
+      if (x>=dx-s*0.5 && x<=dx+s*0.5 && y>=dy-s*0.5 && y<=dy+s*0.5) devHit=true;
     }
-    if (headHit || devHit){
-      hit = e;
-      ok = (e.type==='kid' && e.status==='unauthorized');
-      break;
-    }
+    if (headHit || devHit){ hit=e; ok=(e.type==='kid' && e.status==='unauthorized'); break; }
   }
   if (hit){
     if (ok){ good++; ui.good.textContent=good; playGood(); addPuff(x,y,'#22c55e'); }
     else   { bad++;  ui.bad.textContent =bad; playBad();  addPuff(x,y,'#ff3e3e'); }
-    // Ne pas retirer tout de suite pour éviter un frame “vide”
-    hit.hit = true;
+    hit.hit = true; // retire au frame suivant
   }
-});
+}
+
+// Pointer events + touch (bloque scroll/gestes)
+canvas.addEventListener('pointerdown', e => { e.preventDefault(); handleTapClientXY(e.clientX, e.clientY); });
+canvas.addEventListener('touchstart', e => { if(!running||gameOver) return; e.preventDefault(); const t=e.changedTouches[0]; handleTapClientXY(t.clientX,t.clientY); }, {passive:false});
+['touchmove','touchend','touchcancel','gesturestart','gesturechange','gestureend']
+  .forEach(type => canvas.addEventListener(type, e => e.preventDefault(), {passive:false}));
 
 // Boutons
 ui.playBtn.addEventListener('click', start);
