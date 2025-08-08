@@ -103,9 +103,10 @@ const bubbles = [
 ];
 
 function randomPos(){
-  const margin = 90;
+  const margin = 90; // keep away from edges
+  const uiPad = 120; // reserve space for top UI bar
   const x = Math.random()*(W-2*margin)+margin;
-  const y = Math.random()*(H*0.55-2*margin)+margin + H*0.15;
+  const y = Math.random()*(H-uiPad-margin*1)-margin*0 + uiPad; // full height below UI
   return {x,y};
 }
 
@@ -221,6 +222,8 @@ function start(){
   ui.time.textContent=tLeft; ui.good.textContent=good; ui.bad.textContent=bad;
   entities.length=0; running=true; last=0;
   ui.playBtn.disabled = true; ui.replayBtn.disabled = false;
+  // Clear any splash/frame before starting loop
+  ctx.clearRect(0,0,W,H);
   countdown();
   requestAnimationFrame(loop);
 }
