@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>No Screen! – v7.5</title>
+<title>No Screen! – v7.5.1</title>
 <style>
   *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   html,body{margin:0;height:100%;background:#72d6ff;font-family:'Comic Sans MS','Trebuchet MS',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
@@ -21,7 +21,7 @@
 </head>
 <body>
   <div id="ui">
-    <div id="title">NO SCREEN! – v7.5</div>
+    <div id="title">NO SCREEN! – v7.5.1</div>
     <div id="stats">
       <span>⏱️ <span id="time">120</span>s</span>
       <span>✅ <span id="good">0</span></span>
@@ -36,7 +36,7 @@
   <div id="taplayer" aria-hidden="true"></div>
 
 <script>
-/* ===== No Screen! – v7.5 (global input capture) ===== */
+/* ===== No Screen! – v7.5.1 ===== */
 const canvas = document.getElementById('game');
 const taplayer = document.getElementById('taplayer');
 const ctx = canvas.getContext('2d',{alpha:false});
@@ -89,7 +89,7 @@ Promise.all([...ASSETS.kids.map(tryImage),...ASSETS.parents.map(tryImage),...Obj
 function hills(){const bands=['#c7f36f','#9fe24f','#67c91a','#2ea01a'];
   for(let i=0;i<bands.length;i++){ctx.fillStyle=bands[i];const y=H*0.6+i*25;ctx.beginPath();ctx.moveTo(0,y);for(let x=0;x<=W;x+=40){ctx.quadraticCurveTo(x+20,y-20-(i*3),x+40,y);}ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();}}
 function rr(x,y,w,h,r,f,s){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);if(f)ctx.fill();if(s)ctx.stroke();}
-function drawSplash(){ctx.fillStyle='#72d6ff';ctx.fillRect(0,0,W,H);hills();const bw=Math.min(W*0.8,800),bh=Math.min(H*0.5,380),x=(W-bw)/2,y=(H-bh)/2;ctx.save();ctx.translate(x+5,y+5);ctx.fillStyle='#000';rr(0,0,bw,bh,20,true);ctx.translate(-5,-5);ctx.fillStyle='#ff3e3e';rr(0,0,bw,bh,20,true);ctx.lineWidth=10;ctx.strokeStyle='#000';rr(0,0,bw,bh,20,false,true);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font=`${Math.floor(bh*0.14)}px Impact, Arial Black`;ctx.fillText("NO SCREEN! – v7.5",bw/2,bh*0.33);ctx.font=`${Math.floor(bh*0.07)}px Arial Black`;ctx.fillText("Get to 20 points to win",bw/2,bh*0.55);ctx.restore();}
+function drawSplash(){ctx.fillStyle='#72d6ff';ctx.fillRect(0,0,W,H);hills();const bw=Math.min(W*0.8,800),bh=Math.min(H*0.5,380),x=(W-bw)/2,y=(H-bh)/2;ctx.save();ctx.translate(x+5,y+5);ctx.fillStyle='#000';rr(0,0,bw,bh,20,true);ctx.translate(-5,-5);ctx.fillStyle='#ff3e3e';rr(0,0,bw,bh,20,true);ctx.lineWidth=10;ctx.strokeStyle='#000';rr(0,0,bw,bh,20,false,true);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font=`${Math.floor(bh*0.14)}px Impact, Arial Black`;ctx.fillText("NO SCREEN! – v7.5.1",bw/2,bh*0.33);ctx.font=`${Math.floor(bh*0.07)}px Arial Black`;ctx.fillText("Get to 20 points to win",bw/2,bh*0.55);ctx.restore();}
 
 /* ---- game state & difficulty ---- */
 let running=false, gameOver=false, tLeft=120, good=0, bad=0;
@@ -143,7 +143,7 @@ function ripple(x,y){ripples.push({x,y,age:0});}
 function drawRipples(dt){ripples=ripples.filter(r=>r.age<220);for(const r of ripples){r.age+=dt;const t=r.age/220;ctx.globalAlpha=1-t;ctx.lineWidth=6;ctx.strokeStyle='#ffffff';ctx.beginPath();ctx.arc(r.x,r.y,22+95*t,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}}
 
 /* ---- HUD + progress ---- */
-function hud(){const pad=Math.max(12,Math.min(W,H)*0.02),bw=W-pad*2,bh=Math.max(48,Math.min(W,H)*0.08);ctx.save();ctx.translate(pad,pad);ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(0,0,bw,bh);ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.strokeRect(0,0,bw,bh);ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.font=Math.floor(bh*0.55)+'px Arial Black, Impact';ctx.fillText("NO SCREEN! – v7.5",pad*0.3,bh/2);const stats=`⏱ ${tLeft}s   ✅ ${good}   ❌ ${bad}`;const w=ctx.measureText(stats).width;ctx.fillText(stats,bw-w-pad*0.3,bh/2);const total=Math.max(0,good-bad),max=20,ratio=Math.min(1,total/max);const y=bh+pad*0.5,h=28;ctx.fillStyle='#555';ctx.fillRect(0,y,bw,h);ctx.fillStyle='#22c55e';ctx.fillRect(0,y,bw*ratio,h);ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeRect(0,y,bw,h);ctx.fillStyle='#fff';ctx.font='bold 20px Arial Black, Impact';ctx.textAlign='left';ctx.fillText(`SCORE: ${good-bad}`,0,y+h+22);ctx.restore();}
+function hud(){const pad=Math.max(12,Math.min(W,H)*0.02),bw=W-pad*2,bh=Math.max(48,Math.min(W,H)*0.08);ctx.save();ctx.translate(pad,pad);ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(0,0,bw,bh);ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.strokeRect(0,0,bw,bh);ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.font=Math.floor(bh*0.55)+'px Arial Black, Impact';ctx.fillText("NO SCREEN! – v7.5.1",pad*0.3,bh/2);const stats=`⏱ ${tLeft}s   ✅ ${good}   ❌ ${bad}`;const w=ctx.measureText(stats).width;ctx.fillText(stats,bw-w-pad*0.3,bh/2);const total=Math.max(0,good-bad),max=20,ratio=Math.min(1,total/max);const y=bh+pad*0.5,h=28;ctx.fillStyle='#555';ctx.fillRect(0,y,bw,h);ctx.fillStyle='#22c55e';ctx.fillRect(0,y,bw*ratio,h);ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeRect(0,y,bw,h);ctx.fillStyle='#fff';ctx.font='bold 20px Arial Black, Impact';ctx.textAlign='left';ctx.fillText(`SCORE: ${good-bad}`,0,y+h+22);ctx.restore();}
 
 /* ---- loop ---- */
 function loop(now){
@@ -158,31 +158,30 @@ function loop(now){
   if((good-bad)>=20){ endOverlay(); return; }
   requestAnimationFrame(loop);
 }
-function endOverlay(){running=false;gameOver=true;const bw=Math.min(W*0.8,820),bh=Math.min(H*0.45,360),x=(W-bw)/2,y=(H-bh)/2;ctx.save();ctx.globalAlpha=.85;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;ctx.translate(x+5,y+5);ctx.fillStyle='#000';rr(0,0,bw,bh,18,true);ctx.translate(-5,-5);ctx.fillStyle='#ffce3a';rr(0,0,bw,bh,18,true);ctx.lineWidth=8;ctx.strokeStyle='#000';rr(0,0,bw,bh,18,false,true);ctx.fillStyle='#000';ctx.textAlign='center';ctx.font=`${Math.floor(bh*0.18)}px Impact`;ctx.fillText('GAME OVER',bw/2,bh*0.35);ctx.font=`${Math.floor(bh*0.12)}px Arial Black`;ctx.fillText(`Score: ${good-bad}`,bw/2,bh*0.60);ctx.font=`${Math.floor(bh*0.10)}px Arial Black`;ctx.fillText('Tap “Replay”',bw/2,bh*0.80);ctx.restore();ui.replayBtn.disabled=false;}
+function endOverlay(){disableGlobalInput(); running=false;gameOver=true;const bw=Math.min(W*0.8,820),bh=Math.min(H*0.45,360),x=(W-bw)/2,y=(H-bh)/2;ctx.save();ctx.globalAlpha=.85;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;ctx.translate(x+5,y+5);ctx.fillStyle='#000';rr(0,0,bw,bh,18,true);ctx.translate(-5,-5);ctx.fillStyle='#ffce3a';rr(0,0,bw,bh,18,true);ctx.lineWidth=8;ctx.strokeStyle='#000';rr(0,0,bw,bh,18,false,true);ctx.fillStyle='#000';ctx.textAlign='center';ctx.font=`${Math.floor(bh*0.18)}px Impact`;ctx.fillText('GAME OVER',bw/2,bh*0.35);ctx.font=`${Math.floor(bh*0.12)}px Arial Black`;ctx.fillText(`Score: ${good-bad}`,bw/2,bh*0.60);ctx.font=`${Math.floor(bh*0.10)}px Arial Black`;ctx.fillText('Tap “Replay”',bw/2,bh*0.80);ctx.restore();ui.replayBtn.disabled=false;}
 
 /* ---- start/timers ---- */
-function start(){document.body.classList.add('playing');ensureAudio();tLeft=120;good=0;bad=0;gameOver=false;ui.time.textContent=tLeft;ui.good.textContent=good;ui.bad.textContent=bad;entities.length=0;puffs.length=0;ripples.length=0;lastSpawnAt=0;lastFrame=0;lastUnauthorizedSeen=performance.now();running=true;ui.playBtn.disabled=true;ui.replayBtn.disabled=false;ctx.clearRect(0,0,W,H);countdown();requestAnimationFrame(loop);}
+function start(){document.body.classList.add('playing');ensureAudio();tLeft=120;good=0;bad=0;gameOver=false;ui.time.textContent=tLeft;ui.good.textContent=good;ui.bad.textContent=bad;entities.length=0;puffs.length=0;ripples.length=0;lastSpawnAt=0;lastFrame=0;lastUnauthorizedSeen=performance.now();running=true;ui.playBtn.disabled=true;ui.replayBtn.disabled=false;ctx.clearRect(0,0,W,H);enableGlobalInput();countdown();requestAnimationFrame(loop);}
 function restart(){running=false;drawSplash();start();}
 function countdown(){if(!running||gameOver)return; if(tLeft<=0){endOverlay();return;} setTimeout(()=>{tLeft--;ui.time.textContent=tLeft;countdown();},1000);}
 
-/* ==== GLOBAL INPUT CAPTURE ==== */
+/* ==== INPUT =========================================================== */
 function onRawTap(e){
-  // bump debug
+  // Ignore taps on UI when not playing
+  if(!running){
+    return; // allow Play button to work
+  }
   tapCount++; dbg.textContent='TAPS:'+tapCount;
 
-  // best-effort coords
   let cx,cy;
   if (e.changedTouches && e.changedTouches[0]) { cx=e.changedTouches[0].clientX; cy=e.changedTouches[0].clientY; }
   else { cx=e.clientX; cy=e.clientY; }
   if (typeof cx!=='number' || typeof cy!=='number') return;
 
-  // compute canvas-space
   const rect=canvas.getBoundingClientRect();
   const dpr=Math.min(2,window.devicePixelRatio||1);
   const x=(cx-rect.left)*dpr, y=(cy-rect.top)*dpr;
-  ripples.push({x,y,age:0}); // show feedback always
-
-  if(!running || gameOver) { if(e.cancelable) e.preventDefault(); return; }
+  ripples.push({x,y,age:0});
 
   const now=performance.now();
   for(let i=entities.length-1;i>=0;i--){
@@ -196,28 +195,44 @@ function onRawTap(e){
       const ok=(en.type==='kid' && en.status==='unauthorized');
       if(ok){ good++; ui.good.textContent=good; sGood(); addPuff(x,y,'#22c55e'); }
       else  { bad++;  ui.bad.textContent =bad;  sBad();  addPuff(x,y,'#ff3e3e'); }
-      en.inactive=true;
-      break;
+      en.inactive=true; break;
     }
   }
   if(e.cancelable) e.preventDefault();
 }
 
-// overlay listeners
-['pointerdown','mousedown','click'].forEach(t=> taplayer.addEventListener(t,onRawTap,{passive:false}));
-taplayer.addEventListener('touchstart',onRawTap,{passive:false});
-// window/document capture (belt & suspenders)
-['pointerdown','mousedown','click','touchstart'].forEach(t=>{
-  window.addEventListener(t,onRawTap,{capture:true,passive:false});
-  document.addEventListener(t,onRawTap,{capture:true,passive:false});
-});
+let attached=false;
+function enableGlobalInput(){
+  if(attached) return; attached=true;
+  // overlay
+  ['pointerdown','mousedown','click'].forEach(t=> taplayer.addEventListener(t,onRawTap,{passive:false}));
+  taplayer.addEventListener('touchstart',onRawTap,{passive:false});
+  // window/document capture
+  ['pointerdown','mousedown','click','touchstart'].forEach(t=>{
+    window.addEventListener(t,onRawTap,{capture:true,passive:false});
+    document.addEventListener(t,onRawTap,{capture:true,passive:false});
+  });
+}
+function disableGlobalInput(){
+  if(!attached) return; attached=false;
+  ['pointerdown','mousedown','click'].forEach(t=> taplayer.removeEventListener(t,onRawTap,{passive:false}));
+  taplayer.removeEventListener('touchstart',onRawTap,{passive:false});
+  ['pointerdown','mousedown','click','touchstart'].forEach(t=>{
+    window.removeEventListener(t,onRawTap,{capture:true,passive:false});
+    document.removeEventListener(t,onRawTap,{capture:true,passive:false});
+  });
+}
 
-// buttons
+/* ---- buttons ---- */
 ui.playBtn.addEventListener('click', start);
 ui.replayBtn.addEventListener('click', restart);
 
-// first frame
+/* ---- first frame ---- */
 drawSplash();
+
+/* ---- small render helpers for ripples/HUD ---- */
+let lastFrame=0;
+function drawSplashExtra(){/* kept minimal on purpose */}
 </script>
 </body>
 </html>
