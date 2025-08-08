@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Pas d’écran ! – Tap-tape v4 (single-file)</title>
+<title>Pas d’écran ! – Tap-tape v5 (single-file)</title>
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:#72d6ff;font-family:'Comic Sans MS','Trebuchet MS',system-ui,sans-serif;}
@@ -15,13 +15,12 @@
   #playBtn[disabled],#replayBtn[disabled]{opacity:.6;cursor:not-allowed;box-shadow:none}
   #rules{width:100%}
   #game{position:fixed;inset:0;width:100%;height:100%}
-  /* v4: hide UI during play */
   .playing #ui{display:none}
 </style>
 </head>
 <body>
   <div id="ui">
-    <div id="title">PAS D’ÉCRAN ! – v4</div>
+    <div id="title">PAS D’ÉCRAN ! – v5</div>
     <div id="stats">
       <span>⏱️ <span id="time">120</span>s</span>
       <span>✅ Bons: <span id="good">0</span></span>
@@ -30,16 +29,15 @@
     <button id="playBtn">▶ Jouer (2 min)</button>
     <button id="replayBtn" disabled>↻ Rejouer</button>
     <div id="rules">
-      <p>Version <b>sans images</b>. Ajoutez vos fichiers dans un dossier <code>assets/</code> (facultatif, voir noms ci-dessous).</p>
+      <p>Version <b>sans images</b>. Vous pouvez ajouter des PNG dans <code>assets/</code> (facultatif) avec ces noms : juju.png, suz.png, leo.png, paul.png, raph.png, fred.png, steph.png, phone.png, iPad.png, tv.png, phonex.png, ipadx.png.</p>
       <p>But : tapez uniquement les <b>écrans NON autorisés</b>. Ne tapez jamais les <b>parents</b> ni les enfants <b>OK/sans écran</b>.</p>
-      <p>Noms attendus (si vous ajoutez des PNG) : juju.png, suz.png, leo.png, paul.png, raph.png, fred.png, steph.png, phone.png, iPad.png, tv.png, phonex.png, ipadx.png</p>
     </div>
   </div>
 
   <canvas id="game" width="800" height="600"></canvas>
 
 <script>
-/* === Pas d’écran ! – v4 single-file === */
+/* === Pas d’écran ! – v5 (difficulty ramps up; device icons = head size) === */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d',{alpha:false});
 const ui = {
@@ -60,14 +58,14 @@ function resize(){
 }
 resize(); addEventListener('resize', resize);
 
-// --- Audio beeps (no files) ---
+// Audio beeps
 let ac=null;
 function ensureAudio(){ if(!ac){ ac = new (window.AudioContext||window.webkitAudioContext)(); } if(ac.state==='suspended') ac.resume(); }
 function beep(f=700,d=0.08,t='square',v=0.2){ if(!ac) return; const T=ac.currentTime; const o=ac.createOscillator();o.type=t;o.frequency.value=f; const g=ac.createGain();g.gain.setValueAtTime(v,T);g.gain.exponentialRampToValueAtTime(0.0001,T+d);o.connect(g).connect(ac.destination);o.start(T);o.stop(T+d); }
 function playGood(){ beep(880,0.08,'triangle',0.25); setTimeout(()=>beep(1320,0.06,'triangle',0.22),60); }
 function playBad(){ beep(200,0.12,'sawtooth',0.25); setTimeout(()=>beep(140,0.14,'sawtooth',0.22),80); }
 
-// --- Images (optional) ---
+// Optional images
 function tryImage(src){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
 const ASSETS = {
   kids: ['juju.png','suz.png','leo.png','paul.png','raph.png'].map(n=>'assets/'+n),
@@ -89,7 +87,7 @@ Promise.all([
   drawSplash();
 });
 
-// --- Background / splash ---
+// Background / splash
 function hills(){
   const bands = ['#c7f36f','#9fe24f','#67c91a','#2ea01a'];
   for(let i=0;i<bands.length;i++){
@@ -109,7 +107,6 @@ function roundedRect(x,y,w,h,r,fill,stroke){
 function drawSplash(){
   ctx.fillStyle='#72d6ff'; ctx.fillRect(0,0,W,H);
   hills();
-  // title board
   ctx.save();
   const bw = Math.min(W*0.8, 800), bh = Math.min(H*0.5, 380);
   const x=(W-bw)/2, y=(H-bh)/2;
@@ -118,13 +115,13 @@ function drawSplash(){
   ctx.lineWidth=10; ctx.strokeStyle='#000'; roundedRect(0,0,bw,bh,20,false,true);
   ctx.fillStyle='#fff'; ctx.textAlign='center';
   ctx.font = `${Math.floor(bh*0.14)}px Impact, Arial Black, sans-serif`;
-  ctx.fillText("PAS D'ÉCRAN ! – v4", bw/2, bh*0.33);
+  ctx.fillText("PAS D'ÉCRAN ! – v5", bw/2, bh*0.33);
   ctx.font = `${Math.floor(bh*0.07)}px Arial Black, sans-serif`;
-  ctx.fillText("Tapez seulement les écrans NON AUTORISÉS", bw/2, bh*0.55);
+  ctx.fillText("Début facile → fin difficile", bw/2, bh*0.55);
   ctx.restore();
 }
 
-// --- Game state ---
+// Game state
 let running=false, tLeft=120, good=0, bad=0, last=0;
 let entities = [];
 const bubbles = [
@@ -135,13 +132,21 @@ const bubbles = [
 ];
 
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]||null; }
-// Full-screen spawn (keeps a small margin from edges)
 function randomPos(){
   const margin = 70;
   const x = Math.random()*(W-2*margin)+margin;
   const y = Math.random()*(H-2*margin)+margin;
   return {x,y};
 }
+
+// --- Difficulty scaling ---
+// progress = 0 (start, easy) → 1 (end, hard)
+function progress(){ return 1 - (tLeft/120); }
+function lerp(a,b,t){ return a + (b-a)*t; }
+// life: 3200ms → 900ms; spawn delay: 900ms → 350ms; max entities: 4 → 9
+function currentLife(){ return lerp(3200, 900, progress()); }
+function currentSpawnDelay(){ return lerp(900, 350, progress()); }
+function currentMaxEntities(){ return Math.round(lerp(4, 9, progress())); }
 
 function spawn(){
   const r = Math.random();
@@ -164,17 +169,20 @@ function makeEntity(type, img, pos, status, device, authorizedImg){
   return { id: Math.random().toString(36).slice(2),
     type, img, status, device, authorizedImg,
     x: pos.x, y: pos.y, size,
-    born: performance.now(), life: 1100 + Math.random()*900,
+    born: performance.now(),
+    life: currentLife(),
     bubble: Math.random()<0.25 ? pick(bubbles) : null, hit:false };
 }
 
-// --- Render helpers ---
+// Render helpers
 function drawCenteredImage(img, x, y, w, h){ ctx.drawImage(img, x, y, w, h); }
 function drawDevicePlaceholder(cx, cy, size, color){
   ctx.save(); ctx.translate(cx, cy);
-  ctx.rotate(-0.2); ctx.fillStyle='#000'; ctx.fillRect(-size*0.25-3, -size*0.35-3, size*0.5+6, size*0.7+6);
-  ctx.fillStyle='#fff'; ctx.fillRect(-size*0.25, -size*0.35, size*0.5, size*0.7);
-  ctx.fillStyle=color; ctx.fillRect(-size*0.25, size*0.05, size*0.5, size*0.12);
+  ctx.rotate(-0.2);
+  // phone/tablet placeholder sized like head (size = head diameter)
+  ctx.fillStyle='#000'; ctx.fillRect(-size*0.5-4, -size*0.6-4, size+8, size*1.2+8);
+  ctx.fillStyle='#fff'; ctx.fillRect(-size*0.5, -size*0.6, size, size*1.2);
+  ctx.fillStyle=color; ctx.fillRect(-size*0.5, size*0.05, size, size*0.12);
   ctx.restore();
 }
 function badge(cx, cy, r, color, text){
@@ -195,24 +203,25 @@ function drawBubble(x,y,text){
   ctx.font = Math.floor(Math.min(W,H)*0.03) + 'px Comic Sans MS';
   const w = ctx.measureText(text).width + padding*2;
   const h = parseInt(ctx.font,10) + padding*1.6;
-  const r = 12;
   ctx.translate(x,y);
   ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
-  // rounded box
+  const r = 12;
   ctx.beginPath(); ctx.moveTo(-w+r,-h);
   ctx.arcTo(0,-h,0,0,r); ctx.arcTo(0,0,-w,0,r); ctx.arcTo(-w,0,-w,-h,r); ctx.arcTo(-w,-h,0,-h,r);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  // tail
   ctx.beginPath(); ctx.moveTo(-10, -2); ctx.lineTo(-24, 8); ctx.lineTo(-2, 6); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#000'; ctx.textBaseline='top'; ctx.fillText(text, -w+padding, -h+padding);
   ctx.restore();
 }
 function drawEntity(e, now){
   const wob = Math.sin((now - e.born)/120)*4;
-  const s = e.size;
+  const s = e.size;                    // head diameter
+  const devS = s;                      // device same size as head
+
   // shadow
   ctx.save(); ctx.translate(e.x, e.y + s*0.55); ctx.scale(1,0.35);
   ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.arc(0,0,s*0.45,0,Math.PI*2); ctx.fill(); ctx.restore();
+
   // body (image or placeholder)
   ctx.save(); ctx.translate(e.x + wob, e.y); ctx.beginPath(); ctx.arc(0,0,s*0.5,0,Math.PI*2); ctx.closePath(); ctx.clip();
   if (e.img){ drawCenteredImage(e.img, -s*0.5, -s*0.5, s, s); }
@@ -223,50 +232,69 @@ function drawEntity(e, now){
     ctx.fillStyle='#8b5a2b'; ctx.fillRect(-s*0.5,-s*0.5,s,s*0.25);
   }
   ctx.restore();
+
   // outline
   ctx.lineWidth = Math.max(6, s*0.06);
   ctx.strokeStyle = e.type==='parent' ? '#ba2020' : '#000';
   ctx.beginPath(); ctx.arc(e.x + wob, e.y, s*0.5, 0, Math.PI*2); ctx.stroke();
-  // devices/badges
+
+  // devices/badges — draw device same size as head, offset to the right
+  const dx = e.x + wob + s*0.65, dy = e.y + s*0.05;
   if (e.type==='kid'){
     if (e.status==='unauthorized'){
-      if (e.device){ drawCenteredImage(e.device, e.x + wob - s*0.15, e.y + s*0.15, s*0.5, s*0.5); }
-      else { drawDevicePlaceholder(e.x+wob, e.y+s*0.25, s*0.5, '#ff2b2b'); }
-      band(e.x+wob, e.y + s*0.25, s*0.6, '#ff2b2b');
+      if (e.device){ drawCenteredImage(e.device, dx - devS*0.5, dy - devS*0.5, devS, devS); }
+      else { drawDevicePlaceholder(dx, dy, devS, '#ff2b2b'); }
+      band(e.x+wob, e.y + s*0.25, s*0.9, '#ff2b2b');
     } else if (e.status==='authorized'){
-      if (e.authorizedImg){ drawCenteredImage(e.authorizedImg, e.x + wob - s*0.15, e.y + s*0.15, s*0.5, s*0.5); }
-      else { drawDevicePlaceholder(e.x+wob, e.y+s*0.25, s*0.5, '#22c55e'); }
+      if (e.authorizedImg){ drawCenteredImage(e.authorizedImg, dx - devS*0.5, dy - devS*0.5, devS, devS); }
+      else { drawDevicePlaceholder(dx, dy, devS, '#22c55e'); }
       badge(e.x+wob + s*0.27, e.y - s*0.27, s*0.22, '#22c55e', 'OK');
     }
   } else { badge(e.x + wob + s*0.27, e.y - s*0.27, s*0.22, '#ff3e3e', 'GRR'); }
+
   if (e.bubble){ drawBubble(e.x + wob + s*0.55, e.y - s*0.55, e.bubble); }
 }
 
-// Canvas HUD (title + live stats)
+// HUD with big TOTAL score
 function drawHUD(){
   const pad = Math.max(12, Math.min(W,H)*0.02);
   const bw = W - pad*2, bh = Math.max(48, Math.min(W,H)*0.08);
+  const total = good - bad;
+
   ctx.save();
   ctx.translate(pad, pad);
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,bw,bh);
   ctx.lineWidth=4; ctx.strokeStyle='#000'; ctx.strokeRect(0,0,bw,bh);
   ctx.fillStyle='#fff'; ctx.textBaseline='middle';
   ctx.font = Math.floor(bh*0.55)+'px Arial Black, Impact, sans-serif';
-  ctx.fillText("PAS D'ÉCRAN ! – v4", pad*0.3, bh/2);
+  ctx.fillText("PAS D'ÉCRAN ! – v5", pad*0.3, bh/2);
   const stats = `⏱ ${tLeft}s   ✅ ${good}   ❌ ${bad}`;
   const w = ctx.measureText(stats).width;
   ctx.fillText(stats, bw - w - pad*0.3, bh/2);
+
+  const bigY = bh + Math.max(10, pad*0.6);
+  ctx.font = Math.floor(Math.min(W,H)*0.08)+'px Arial Black, Impact, sans-serif';
+  ctx.fillStyle = total >= 0 ? '#00ff88' : '#ff5050';
+  ctx.fillText(`SCORE TOTAL : ${total}`, pad*0.3, bigY);
   ctx.restore();
 }
 
-// --- Loop / control ---
+// Loop with dynamic spawn delay and cap
+let spawnTicker=0, spawnDelay=currentSpawnDelay();
 function loop(now){
   if (!running){ return; }
-  if (now - last > 500){
+
+  // dynamic spawn timing & cap
+  spawnDelay = currentSpawnDelay();
+  if (now - last > spawnDelay){
     last = now;
-    if (entities.length < 5 && Math.random()<0.9) spawn();
+    if (entities.length < currentMaxEntities()) spawn();
   }
+
+  // cull by lifetime
   entities = entities.filter(e => now - e.born < e.life && !e.hit);
+
+  // draw
   ctx.fillStyle='#72d6ff'; ctx.fillRect(0,0,W,H);
   hills();
   entities.forEach(e => drawEntity(e, now));
@@ -280,7 +308,7 @@ function start(){
   ui.time.textContent=tLeft; ui.good.textContent=good; ui.bad.textContent=bad;
   entities.length=0; running=true; last=0;
   ui.playBtn.disabled = true; ui.replayBtn.disabled = false;
-  ctx.clearRect(0,0,W,H);  // clear splash
+  ctx.clearRect(0,0,W,H);
   countdown();
   requestAnimationFrame(loop);
 }
@@ -288,7 +316,10 @@ function restart(){ stop(false); start(); }
 function stop(alertEnd=true){
   document.body.classList.remove('playing');
   running=false; drawSplash(); ui.playBtn.disabled = false;
-  if(alertEnd){ setTimeout(()=>{ alert(`Temps écoulé !\nBons coups: ${good}\nOups: ${bad}`); }, 50); }
+  if(alertEnd){
+    const total = good - bad;
+    setTimeout(()=>{ alert(`Temps écoulé !\nBons: ${good}\nOups: ${bad}\nSCORE TOTAL: ${total}`); }, 50);
+  }
 }
 function countdown(){ if (!running) return; if (tLeft<=0){ stop(true); return; } setTimeout(()=>{ tLeft--; ui.time.textContent=tLeft; countdown(); }, 1000); }
 
@@ -309,7 +340,8 @@ canvas.addEventListener('pointerdown', (ev)=>{
     const ok = (hit.type==='kid' && hit.status==='unauthorized');
     if (ok){ good++; playGood(); } else { bad++; playBad(); }
     ui.good.textContent=good; ui.bad.textContent=bad;
-    hit.hit=true; splat(x,y, ok ? '#22c55e' : '#ff3e3e');
+    hit.hit=true;
+    splat(x,y, ok ? '#22c55e' : '#ff3e3e');
   }
 });
 function splat(x,y,color){
