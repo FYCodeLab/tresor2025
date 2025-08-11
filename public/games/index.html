@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>No Screen! – v7.5.2</title>
+  <title>No Screen! – v7.5.3</title>
   <style>
     * {
       box-sizing: border-box;
@@ -97,7 +97,7 @@
 </head>
 <body>
   <div id="ui">
-    <div id="title">NO SCREEN! – grokv7.5.2</div>
+    <div id="title">NO SCREEN! – v7.5.3</div>
     <div id="stats">
       <span>⏱️ <span id="time">120</span>s</span>
       <span>✅ <span id="good">0</span></span>
@@ -112,7 +112,7 @@
   <div id="taplayer" aria-hidden="true"></div>
 
   <script>
-    /* ===== No Screen! – v7.5.2 ===== */
+    /* ===== No Screen! – v7.5.3 ===== */
     const canvas = document.getElementById('game');
     const taplayer = document.getElementById('taplayer');
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -206,6 +206,7 @@
       IMGS.parents = list.slice(k, k += ASSETS.parents.length);
       const d = list.slice(k);
       IMGS.devices = { phone: d[0], ipad: d[1], tv: d[2], phonex: d[3], ipadx: d[4] };
+      console.log('Assets loaded:', IMGS); // Debug asset loading
       drawSplash();
     });
 
@@ -227,7 +228,7 @@
       }
     }
     function rr(x, y, w, h, r, f, s) {
-      ctx.startPath();
+      ctx.beginPath(); // Fixed: Use beginPath instead of startPath
       ctx.moveTo(x + r, y);
       ctx.arcTo(x + w, y, x + w, y + h, r);
       ctx.arcTo(x + w, y + h, x, y + h, r);
@@ -254,7 +255,7 @@
       ctx.fillStyle = '#fff';
       ctx.textAlign = 'center';
       ctx.font = `${Math.floor(bh * 0.14)}px Impact, Arial Black`;
-      ctx.fillText("NO SCREEN! – v7.5.2", bw / 2, bh * 0.33);
+      ctx.fillText("NO SCREEN! – v7.5.3", bw / 2, bh * 0.33);
       ctx.font = `${Math.floor(bh * 0.07)}px Arial Black`;
       ctx.fillText("Get to 20 points to win", bw / 2, bh * 0.55);
       ctx.restore();
@@ -301,6 +302,7 @@
       } else {
         entities.push({ type: 'parent', x: pos.x, y: pos.y, size, born: performance.now(), life: life(), img: pick(IMGS.parents), status: 'angry', device: null, authorizedImg: null, inactive: false });
       }
+      console.log('Spawned entity:', entities[entities.length - 1]); // Debug spawn
     }
 
     /* ---- drawing ---- */
@@ -321,7 +323,7 @@
       ctx.fillStyle = c;
       ctx.strokeStyle = '#000';
       ctx.lineWidth = r * 0.25;
-      ctx.startPath();
+      ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
@@ -344,18 +346,19 @@
       ctx.restore();
     }
     function drawEntity(e, now) {
+      console.log('Drawing entity:', e); // Debug draw
       const wob = Math.sin((now - e.born) / 120) * 4, s = e.size, devS = s;
       ctx.save();
       ctx.translate(e.x, e.y + s * 0.55);
       ctx.scale(1, 0.35);
       ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.startPath();
+      ctx.beginPath();
       ctx.arc(0, 0, s * 0.45, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
       ctx.save();
       ctx.translate(e.x + wob, e.y);
-      ctx.startPath();
+      ctx.beginPath();
       ctx.arc(0, 0, s * 0.5, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
@@ -365,8 +368,8 @@
         ctx.fillStyle = '#ffdbb5';
         ctx.fillRect(-s * 0.5, -s * 0.5, s, s);
         ctx.fillStyle = '#000';
-        ctx.startPath();
-        ctx.arc(-s * 0.17, -s * 0.05, s * 0.-do6, 0, Math.PI * 2);
+        ctx.beginPath();
+        ctx.arc(-s * 0.17, -s * 0.05, s * 0.06, 0, Math.PI * 2);
         ctx.arc(s * 0.17, -s * 0.05, s * 0.06, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillRect(-s * 0.18, s * 0.15, s * 0.36, s * 0.06);
@@ -376,7 +379,7 @@
       ctx.restore();
       ctx.lineWidth = Math.max(6, s * 0.06);
       ctx.strokeStyle = e.type === 'parent' ? '#ba2020' : '#000';
-      ctx.startPath();
+      ctx.beginPath();
       ctx.arc(e.x + wob, e.y, s * 0.5, 0, Math.PI * 2);
       ctx.stroke();
       const dx = e.x + wob + s * 0.65, dy = e.y + s * 0.05;
@@ -410,7 +413,7 @@
         const px = p.x + Math.cos(p.a) * p.r * (0.5 + t * 1.2), py = p.y + Math.sin(p.a) * p.r * (0.5 + t * 1.2);
         ctx.globalAlpha = 1 - t;
         ctx.fillStyle = p.color;
-        ctx.startPath();
+        ctx.beginPath();
         ctx.ellipse(px, py, 10 * (1 - t), 14 * (1 - t), p.a, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
@@ -427,7 +430,7 @@
         ctx.globalAlpha = 1 - t;
         ctx.lineWidth = 6;
         ctx.strokeStyle = '#ffffff';
-        ctx.startPath();
+        ctx.beginPath();
         ctx.arc(r.x, r.y, 22 + 95 * t, 0, Math.PI * 2);
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -447,7 +450,7 @@
       ctx.fillStyle = '#fff';
       ctx.textBaseline = 'middle';
       ctx.font = Math.floor(bh * 0.55) + 'px Arial Black, Impact';
-      ctx.fillText("NO SCREEN! – v7.5.2", pad * 0.3, bh / 2);
+      ctx.fillText("NO SCREEN! – v7.5.3", pad * 0.3, bh / 2);
       const stats = `⏱ ${tLeft}s   ✅ ${good}   ❌ ${bad}`;
       const w = ctx.measureText(stats).width;
       ctx.fillText(stats, bw - w - pad * 0.3, bh / 2);
@@ -480,9 +483,10 @@
       const dt = lastFrame ? (now - lastFrame) : 16;
       lastFrame = now;
       entities = entities.filter(e => (now - e.born) < e.life && !e.inactive);
-      ctx.fillStyle = '#72d6ff';
+      ctx.fillStyle mkdown
       ctx.fillRect(0, 0, W, H);
       hills();
+      console.log('Entities to draw:', entities.length); // Debug entity count
       for (const e of entities) drawEntity(e, now);
       drawPuffs(dt);
       hud();
@@ -543,6 +547,7 @@
       ui.replayBtn.disabled = false;
       ctx.clearRect(0, 0, W, H);
       attachOverlayInput();
+      spawn(true); // Force initial spawn to ensure at least one entity
       countdown();
       requestAnimationFrame(loop);
     }
