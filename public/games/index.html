@@ -3,32 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>No Screen! – v9</title>
+<title>No Screen! – v9.1</title>
 <style>
   *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-  html,body{
-    margin:0;height:100%;background:#72d6ff;
+  html,body{margin:0;height:100%;background:#72d6ff;
     font-family:'Comic Sans MS','Trebuchet MS',system-ui,sans-serif;
-    overflow:hidden;overscroll-behavior:none
-  }
-  /* Barre du haut */
-  #ui{
-    position:fixed;top:0;left:0;right:0;padding:8px 10px;
-    background:#0009;color:#fff;backdrop-filter:blur(3px);
-    display:flex;gap:12px;align-items:center;flex-wrap:wrap;z-index:10
-  }
+    overflow:hidden;overscroll-behavior:none}
+  #ui{position:fixed;top:0;left:0;right:0;padding:8px 10px;
+      background:#0009;color:#fff;backdrop-filter:blur(3px);
+      display:flex;gap:12px;align-items:center;flex-wrap:wrap;z-index:10}
   #title{font-weight:900;letter-spacing:1px;padding:2px 8px;border:3px solid #fff;border-radius:8px;background:#ff3e3e;text-shadow:1px 1px 0 #000}
   #stats{display:flex;gap:14px;font-weight:800}
-  #playBtn,#replayBtn{
-    padding:8px 12px;border:4px solid #000;border-radius:12px;
-    background:#ffd400;font-weight:900;box-shadow:0 4px 0 #000;cursor:pointer
-  }
-  #playBtn[disabled],#replayBtn[disabled]{opacity:.6;cursor:not-allowed;box-shadow:none}
   #barWrap{width:100%;display:flex;gap:8px;align-items:center}
   #timeText{min-width:58px;font-weight:900}
   #bar{flex:1;height:18px;background:#444;border:3px solid #000;border-radius:10px;overflow:hidden}
   #barFill{height:100%;width:100%;background:#22c55e;transition:width .25s linear, background .25s linear}
-
+  #playBtn,#replayBtn{padding:8px 12px;border:4px solid #000;border-radius:12px;background:#ffd400;font-weight:900;box-shadow:0 4px 0 #000;cursor:pointer}
+  #playBtn[disabled],#replayBtn[disabled]{opacity:.6;cursor:not-allowed;box-shadow:none}
   #game{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
   #taplayer{position:fixed;inset:0;z-index:3;touch-action:none;pointer-events:none}
   .playing #taplayer{pointer-events:auto}
@@ -36,287 +27,209 @@
 </head>
 <body>
   <div id="ui">
-    <div id="title">NO SCREEN! – v9</div>
-    <div id="stats">
-      <span>Score : <span id="score">0</span></span>
-    </div>
+    <div id="title">NO SCREEN! – v9.1</div>
+    <div id="stats">Score : <span id="score">0</span></div>
     <div id="barWrap">
       <span id="timeText">60s</span>
       <div id="bar"><div id="barFill"></div></div>
     </div>
-    <button id="playBtn" onclick="start()">▶ Jouer</button>
-    <button id="replayBtn" onclick="restart()" disabled>↻ Rejouer</button>
+    <button id="playBtn">▶ Jouer</button>
+    <button id="replayBtn" disabled>↻ Rejouer</button>
   </div>
 
   <canvas id="game"></canvas>
   <div id="taplayer" aria-hidden="true"></div>
 
 <script>
-/* ===== No Screen! – v9 =====
-   - HTML à placer dans /public/games/index.html
-   - PNG dans /public/games/assets/ (on référence simplement "assets/…")
-   - Un seul gros sprite 0,5 s → écran vide 1,5 s, pendant 60 s
-   - 70 % des apparitions = "BON à cliquer" (enfant + écran NON autorisé)
-   - +1 pouf vert si bon, −1 pouf rouge sinon
-   - Fin : score géant + commentaire FR
-*/
+/* ========= No Screen! – v9.1 (sp1 body + heads + device-in-hand) ========= */
 const canvas = document.getElementById('game');
 const taplayer = document.getElementById('taplayer');
 const ctx = canvas.getContext('2d',{alpha:false});
-const ui = {
-  score: document.getElementById('score'),
-  timeText: document.getElementById('timeText'),
-  barFill: document.getElementById('barFill'),
-  playBtn: document.getElementById('playBtn'),
-  replayBtn: document.getElementById('replayBtn'),
-};
+const ui = {score:document.getElementById('score'), time:document.getElementById('timeText'),
+            bar:document.getElementById('barFill'), play:document.getElementById('playBtn'),
+            replay:document.getElementById('replayBtn')};
 
-const TOTAL_SECS = 60;
-const SHOW_MS   = 500;
-const BLANK_MS  = 1500;
+const TOTAL_SECS=60, SHOW_MS=500, BLANK_MS=1500;
+const ASSET_BASE='assets/'; // index.html in /public/games/
 
 let W=0,H=0;
-function resize(){
-  const dpr=Math.min(2,window.devicePixelRatio||1);
-  canvas.width=Math.floor(innerWidth*dpr);
-  canvas.height=Math.floor(innerHeight*dpr);
-  canvas.style.width=innerWidth+'px';
-  canvas.style.height=innerHeight+'px';
+function resize(){const dpr=Math.min(2,window.devicePixelRatio||1);
+  canvas.width=Math.floor(innerWidth*dpr); canvas.height=Math.floor(innerHeight*dpr);
+  canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
   W=canvas.width; H=canvas.height;
 }
 resize(); addEventListener('resize',resize);
 
-/* ---- audio ---- */
-let ac=null;
-function ensureAudio(){ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume(); }
-function beep(f=700,d=0.08,t='square',v=0.22){ if(!ac) return; const T=ac.currentTime; const o=ac.createOscillator(); o.type=t; o.frequency.value=f; const g=ac.createGain(); g.gain.setValueAtTime(v,T); g.gain.exponentialRampToValueAtTime(0.0001,T+d); o.connect(g).connect(ac.destination); o.start(T); o.stop(T+d); }
+/* --- audio --- */
+let ac=null; function ensureAudio(){if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume();}
+function beep(f=700,d=0.08,t='square',v=0.22){ if(!ac) return; const T=ac.currentTime; const o=ac.createOscillator(); o.type=t;o.frequency.value=f; const g=ac.createGain(); g.gain.setValueAtTime(v,T); g.gain.exponentialRampToValueAtTime(0.0001,T+d); o.connect(g).connect(ac.destination); o.start(T); o.stop(T+d);}
 const sGood=()=>{beep(920,0.07,'triangle',0.28); setTimeout(()=>beep(1380,0.06,'triangle',0.24),55);};
 const sBad =()=>{beep(220,0.10,'sawtooth',0.26); setTimeout(()=>beep(160,0.12,'sawtooth',0.22),70);};
 
-/* ---- chargement images (chemins RELATIFS : "assets/…") ---- */
-function tryImage(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src;});}
+/* --- images (fallback safe) --- */
+function tryImage(src){return new Promise(r=>{const i=new Image(); i.onload=()=>r(i); i.onerror=()=>r(null); i.src=src;});}
 const ASSETS={
-  kids:    ['juju','leo','paul','raph','suz'].map(n=>'assets/'+n+'.png'),
-  parents: ['dom','frank','fred','steph'].map(n=>'assets/'+n+'.png'),
-  devices: { phone:'assets/phone.png', ipad:'assets/iPad.png', tv:'assets/tv.png',
-             phonex:'assets/phonex.png', ipadx:'assets/ipadx.png' }
+  body: ASSET_BASE+'sp1.png', // new base body
+  kids:    ['juju','leo','paul','raph','suz'].map(n=>ASSET_BASE+n+'.png'),
+  parents: ['dom','frank','fred','steph'].map(n=>ASSET_BASE+n+'.png'),
+  devices: {phone:ASSET_BASE+'phone.png', ipad:ASSET_BASE+'iPad.png', tv:ASSET_BASE+'tv.png',
+            phonex:ASSET_BASE+'phonex.png', ipadx:ASSET_BASE+'ipadx.png'}
 };
-let IMGS={kids:[],parents:[],devices:{}};
-Promise.all([
-  ...ASSETS.kids.map(tryImage),
-  ...ASSETS.parents.map(tryImage),
-  ...Object.values(ASSETS.devices).map(tryImage),
+let IMGS={body:null,kids:[],parents:[],devices:{}};
+Promise.all([ tryImage(ASSETS.body),
+  ...ASSETS.kids.map(tryImage), ...ASSETS.parents.map(tryImage),
+  ...Object.values(ASSETS.devices).map(tryImage)
 ]).then(list=>{
-  let k=0;
-  IMGS.kids    = list.slice(k, k+=ASSETS.kids.length);
-  IMGS.parents = list.slice(k, k+=ASSETS.parents.length);
-  const d = list.slice(k);
-  IMGS.devices = { phone:d[0], ipad:d[1], tv:d[2], phonex:d[3], ipadx:d[4] };
+  let k=0; IMGS.body=list[k++]; 
+  IMGS.kids=list.slice(k,k+=ASSETS.kids.length);
+  IMGS.parents=list.slice(k,k+=ASSETS.parents.length);
+  const d=list.slice(k); IMGS.devices={phone:d[0],ipad:d[1],tv:d[2],phonex:d[3],ipadx:d[4]};
   drawSplash();
 });
 
-/* ---- décor ---- */
+/* --- décor --- */
 function hills(){const bands=['#c7f36f','#9fe24f','#67c91a','#2ea01a'];
-  for(let i=0;i<bands.length;i++){ctx.fillStyle=bands[i];
-    const y=H*0.6+i*25; ctx.beginPath(); ctx.moveTo(0,y);
-    for(let x=0;x<=W;x+=40){ctx.quadraticCurveTo(x+20,y-20-(i*3),x+40,y);}
-    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
-  }}
-function rr(x,y,w,h,r,f,s){ctx.beginPath();ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);
-  if(f)ctx.fill(); if(s)ctx.stroke();
+  for(let i=0;i<bands.length;i++){ctx.fillStyle=bands[i]; const y=H*0.6+i*25;
+    ctx.beginPath(); ctx.moveTo(0,y); for(let x=0;x<=W;x+=40){ctx.quadraticCurveTo(x+20,y-20-(i*3),x+40,y);} ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();}
 }
-function drawSplash(){
-  ctx.fillStyle='#72d6ff';ctx.fillRect(0,0,W,H);hills();
+function rr(x,y,w,h,r,f,s){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);if(f)ctx.fill();if(s)ctx.stroke();}
+function drawSplash(){ctx.fillStyle='#72d6ff';ctx.fillRect(0,0,W,H);hills();
   const bw=Math.min(W*0.8,800), bh=Math.min(H*0.5,360), x=(W-bw)/2, y=(H-bh)/2;
   ctx.save(); ctx.translate(x+5,y+5); ctx.fillStyle='#000'; rr(0,0,bw,bh,20,true);
   ctx.translate(-5,-5); ctx.fillStyle='#ff3e3e'; rr(0,0,bw,bh,20,true);
   ctx.lineWidth=10; ctx.strokeStyle='#000'; rr(0,0,bw,bh,20,false,true);
   ctx.fillStyle='#fff'; ctx.textAlign='center';
-  ctx.font=`${Math.floor(bh*0.18)}px Impact, Arial Black`; ctx.fillText("NO SCREEN! – v9",bw/2,bh*0.35);
-  ctx.font=`${Math.floor(bh*0.085)}px Arial Black`; ctx.fillText("Tape les écrans NON autorisés : +1",bw/2,bh*0.60);
-  ctx.font=`${Math.floor(bh*0.075)}px Arial Black`; ctx.fillText("Sinon : −1  |  0,5s visible → 1,5s vide (60s)",bw/2,bh*0.80);
-  ctx.restore();
+  ctx.font=`${Math.floor(bh*0.18)}px Impact, Arial Black`; ctx.fillText("NO SCREEN! – v9.1",bw/2,bh*0.35);
+  ctx.font=`${Math.floor(bh*0.085)}px Arial Black`; ctx.fillText("70% bons à cliquer : +1",bw/2,bh*0.60);
+  ctx.font=`${Math.floor(bh*0.075)}px Arial Black`; ctx.fillText("0,5 s visible → 1,5 s vide (60 s)",bw/2,bh*0.80); ctx.restore();
 }
 
-/* ---- état ---- */
-let running=false, score=0;
-let timeLeft=TOTAL_SECS, timerId=null;
-let phase='blank';
-let showTO=null, blankTO=null;
-let current=null;
-let puffs=[];
+/* --- state --- */
+let running=false, score=0, timeLeft=TOTAL_SECS, timerId=null;
+let phase='blank', showTO=null, blankTO=null, current=null, puffs=[];
 
-/* utilitaires */
 const pick=a=>a[Math.floor(Math.random()*a.length)]||null;
 
-/* entité à afficher (pondération 70% "good") */
+/* Build entity – 70% good (kid + unauthorized device-in-hand) */
 function makeEntity(){
-  const size = Math.min(W,H)*0.35;
-  const cx=W/2, cy=H*0.52;
-
-  const good = Math.random() < 0.70; // 70 % BON À CLIQUER
-  if (good){
-    // enfant + écran NON autorisé
-    return {
-      type:'kid', x:cx, y:cy, size,
-      status:'unauthorized',
-      device: pick([IMGS.devices.phone, IMGS.devices.ipad, IMGS.devices.tv].filter(Boolean)),
-      authorizedImg:null,
-      img: pick(IMGS.kids)
-    };
+  const headSize = Math.min(W,H)*0.28;      // head diameter
+  const x=W/2, y=H*0.42;                    // head center
+  const isGood = Math.random() < 0.70;
+  if (isGood){
+    return {type:'kid', x, y, headSize, status:'unauthorized',
+            head:pick(IMGS.kids),
+            device:pick([IMGS.devices.phone,IMGS.devices.ipad,IMGS.devices.tv].filter(Boolean)),
+            authorizedImg:null};
   } else {
-    // soit parent, soit enfant OK/sans écran (mauvais click)
-    const badType = Math.random() < 0.5 ? 'parent' : 'kid';
+    const badType = Math.random()<0.5?'parent':'kid';
     if (badType==='parent'){
-      return {type:'parent', x:cx, y:cy, size, status:'angry', device:null, authorizedImg:null, img:pick(IMGS.parents)};
+      return {type:'parent', x, y, headSize, status:'angry', head:pick(IMGS.parents), device:null, authorizedImg:null};
+    } else {
+      const authorized = Math.random()<0.6;
+      return {type:'kid', x, y, headSize, status: authorized?'authorized':'none',
+              head:pick(IMGS.kids),
+              device:null,
+              authorizedImg: authorized? pick([IMGS.devices.phonex,IMGS.devices.ipadx].filter(Boolean)) : null};
     }
-    // enfant OK (autorisé) ou sans écran
-    const authorized = Math.random()<0.6;
-    return {
-      type:'kid', x:cx, y:cy, size,
-      status: authorized?'authorized':'none',
-      device:null,
-      authorizedImg: authorized? pick([IMGS.devices.phonex, IMGS.devices.ipadx].filter(Boolean)) : null,
-      img:pick(IMGS.kids)
-    };
   }
 }
 
-/* séquencement */
-function scheduleShow(){
-  if(!running || timeLeft<=0) return;
-  clearTimeout(showTO); clearTimeout(blankTO);
-  current = makeEntity(); phase='show';
-  showTO = setTimeout(endShow, SHOW_MS);
+/* Sequencing */
+function scheduleShow(){ if(!running||timeLeft<=0) return; clearTimeout(showTO);clearTimeout(blankTO);
+  current=makeEntity(); phase='show'; showTO=setTimeout(endShow,SHOW_MS);
 }
-function endShow(){
-  if(!running) return;
-  current=null; phase='blank';
-  if(timeLeft>0) blankTO = setTimeout(scheduleShow, BLANK_MS);
-}
+function endShow(){ if(!running) return; current=null; phase='blank'; if(timeLeft>0) blankTO=setTimeout(scheduleShow,BLANK_MS); }
 
-/* chrono */
-function startTimer(){
-  updateTimerText();
-  timerId = setInterval(()=>{
-    if(!running) return;
-    timeLeft = Math.max(0, timeLeft-1);
-    updateTimerText();
-    if(timeLeft<=0){ endGame(); }
-  },1000);
-}
+/* Timer */
+function startTimer(){ updateTimer(); timerId=setInterval(()=>{ if(!running) return; timeLeft=Math.max(0,timeLeft-1); updateTimer(); if(timeLeft<=0) endGame(); },1000); }
 function stopTimer(){ clearInterval(timerId); timerId=null; }
-function updateTimerText(){
-  ui.timeText.textContent = timeLeft+'s';
-  const ratio = timeLeft/TOTAL_SECS;
-  ui.barFill.style.width = (ratio*100)+'%';
-  ui.barFill.style.background = ratio>0.33 ? '#22c55e' : (ratio>0.15 ? '#ffb020' : '#ff5050');
-}
+function updateTimer(){ ui.time.textContent=timeLeft+'s'; const r=timeLeft/TOTAL_SECS; ui.bar.style.width=(r*100)+'%'; ui.bar.style.background=r>0.33?'#22c55e':(r>0.15?'#ffb020':'#ff5050'); }
 
-/* cycle de vie */
-function start(){
-  ensureAudio();
-  score=0; ui.score.textContent=score;
-  timeLeft=TOTAL_SECS; updateTimerText();
-  running=true; ui.playBtn.disabled=true; ui.replayBtn.disabled=false;
-  document.body.classList.add('playing');
-  attachOverlayInput();
-  scheduleShow(); stopTimer(); startTimer();
-  requestAnimationFrame(loop);
-}
+/* Lifecycle */
+ui.play.onclick = start; ui.replay.onclick = restart;
+function start(){ ensureAudio(); score=0; ui.score.textContent=score; timeLeft=TOTAL_SECS; updateTimer();
+  running=true; ui.play.disabled=true; ui.replay.disabled=false; document.body.classList.add('playing');
+  attachInput(); scheduleShow(); stopTimer(); startTimer(); requestAnimationFrame(loop); }
 function restart(){ running=false; cleanup(); drawSplash(); start(); }
+function cleanup(){ clearTimeout(showTO); clearTimeout(blankTO); stopTimer(); detachInput(); }
 
-/* fin : score + commentaire FR */
-const COMMENTS = {
-  top: [
-    "Bravo ! Zéro écran, 100 % victoire parentale !",
-    "Héros anti-écran ! Les enfants demandent un livre… ou presque.",
-    "Score épique ! Les écrans sont au coin punition."
-  ],
-  good: [
-    "Bien joué ! Les parents respirent, les écrans transpirent.",
-    "Super rythme ! Les pouces des parents te disent merci.",
-    "Pas mal du tout ! Encore un peu et on coupe le Wi-Fi."
-  ],
-  ok: [
-    "Pas mal… on sent le potentiel anti-écran !",
-    "On y est presque : encore deux tapes et c’est dodo sans tablette.",
-    "Ça progresse ! Les écrans commencent à trembler."
-  ],
-  low: [
-    "Aïe… aujourd’hui les écrans ont mené la danse. Revanche ?",
-    "Oups ! Les tablettes ont pris l’avantage. On retente ?",
-    "Courage ! Même les super-parents ont des jours avec écrans."
-  ]
-};
-function pickComment(s){
-  if(s>=20) return pick(COMMENTS.top);
-  if(s>=10) return pick(COMMENTS.good);
-  if(s>=0)  return pick(COMMENTS.ok);
-  return pick(COMMENTS.low);
-}
-function endGame(){
-  running=false; cleanup(); document.body.classList.remove('playing');
+/* End screen text */
+const COMMENTS={top:["Bravo ! Zéro écran, 100 % victoire parentale !","Héros anti-écran ! Les enfants demandent un livre… ou presque.","Score épique ! Les écrans sont au coin punition."],
+good:["Bien joué ! Les parents respirent, les écrans transpirent.","Super rythme ! Les pouces des parents te disent merci.","Pas mal du tout ! Encore un peu et on coupe le Wi-Fi."],
+ok:["Pas mal… on sent le potentiel anti-écran !","On y est presque : encore deux tapes et c’est dodo sans tablette.","Ça progresse ! Les écrans commencent à trembler."],
+low:["Aïe… aujourd’hui les écrans ont mené la danse. Revanche ?","Oups ! Les tablettes ont pris l’avantage. On retente ?","Courage ! Même les super-parents ont des jours avec écrans."]};
+function pickComment(s){ if(s>=20) return pick(COMMENTS.top); if(s>=10) return pick(COMMENTS.good); if(s>=0) return pick(COMMENTS.ok); return pick(COMMENTS.low); }
+function endGame(){ running=false; cleanup(); document.body.classList.remove('playing');
   const bw=Math.min(W*0.9,880), bh=Math.min(H*0.55,420), x=(W-bw)/2, y=(H-bh)/2;
   ctx.save(); ctx.globalAlpha=.85; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
-  ctx.fillStyle='#ffce3a'; ctx.fillRect(x,y,bw,bh);
-  ctx.lineWidth=10; ctx.strokeStyle='#000'; ctx.strokeRect(x,y,bw,bh);
-  ctx.fillStyle='#000'; ctx.textAlign='center';
-  ctx.font=`${Math.floor(bh*0.28)}px Impact, Arial Black`; 
-  ctx.fillText(`Score : ${score}`, W/2, y+bh*0.42);
-  const line = pickComment(score);
-  ctx.font=`${Math.floor(bh*0.12)}px Arial Black`;
-  wrapText(line, W/2, y+bh*0.72, bw*0.85);
-  ctx.restore();
+  ctx.fillStyle='#ffce3a'; ctx.fillRect(x,y,bw,bh); ctx.lineWidth=10; ctx.strokeStyle='#000'; ctx.strokeRect(x,y,bw,bh);
+  ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.font=`${Math.floor(bh*0.28)}px Impact, Arial Black`; ctx.fillText(`Score : ${score}`, W/2, y+bh*0.42);
+  const line=pickComment(score); ctx.font=`${Math.floor(bh*0.12)}px Arial Black`; wrapText(line, W/2, y+bh*0.72, bw*0.85); ctx.restore();
 }
 
-/* nettoyage */
-function cleanup(){
-  clearTimeout(showTO); clearTimeout(blankTO);
-  stopTimer(); detachOverlayInput();
-}
-
-/* dessin d’une entité (avec fallback si PNG manquant) */
+/* Compose & draw character (sp1 body + clipped head + device in hand) */
 function drawEntity(e){
-  const s=e.size;
-  // ombre
-  ctx.save(); ctx.translate(e.x, e.y + s*0.55); ctx.scale(1,0.35);
-  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.arc(0,0,s*0.45,0,Math.PI*2); ctx.fill(); ctx.restore();
+  const hd=e.headSize;          // head diameter
+  const bodyW=hd*1.1, bodyH=hd*1.8;
+  const bodyX=e.x-bodyW/2, bodyY=e.y-hd*0.2; // place body under head
 
-  // tête (image ou placeholder)
-  ctx.save(); ctx.translate(e.x, e.y); ctx.beginPath(); ctx.arc(0,0,s*0.5,0,Math.PI*2); ctx.closePath(); ctx.clip();
-  if (e.img) ctx.drawImage(e.img, -s*0.5, -s*0.5, s, s);
-  else { // placeholder cartoon
-    ctx.fillStyle='#ffdbb5'; ctx.fillRect(-s*0.5,-s*0.5,s,s);
-    ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(-s*0.17,-s*0.05,s*0.06,0,Math.PI*2); ctx.arc(s*0.17,-s*0.05,s*0.06,0,Math.PI*2); ctx.fill();
-    ctx.fillRect(-s*0.18,s*0.15,s*0.36,s*0.06);
-    ctx.fillStyle='#8b5a2b'; ctx.fillRect(-s*0.5,-s*0.5,s,s*0.25);
+  // shadow
+  ctx.save(); ctx.translate(e.x, bodyY+bodyH*0.92); ctx.scale(1,0.35);
+  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(0,0,bodyW*0.35,bodyW*0.22,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+
+  // body sprite or placeholder
+  if (IMGS.body){
+    ctx.drawImage(IMGS.body, bodyX, bodyY, bodyW, bodyH);
+  } else {
+    // simple torso placeholder
+    ctx.fillStyle='#ffd34d'; ctx.fillRect(bodyX+bodyW*0.12, bodyY+bodyH*0.25, bodyW*0.76, bodyH*0.55);
+    ctx.fillStyle='#8b5a2b'; ctx.fillRect(bodyX+bodyW*0.3, bodyY+bodyH*0.8, bodyW*0.4, bodyH*0.15);
+  }
+
+  // device position near right hand
+  const handX = bodyX + bodyW*0.78;
+  const handY = bodyY + bodyH*0.58;
+  const devSize = hd*0.7;
+
+  // device-in-hand / badges
+  if (e.type==='kid'){
+    if (e.status==='unauthorized'){
+      if (e.device) {
+        ctx.save(); ctx.translate(handX,handY); ctx.rotate(-0.2);
+        ctx.drawImage(e.device, -devSize*0.5, -devSize*0.5, devSize, devSize);
+        ctx.restore();
+      } else { drawDevicePlaceholder(handX,handY,devSize,'#ff2b2b',-0.2); }
+    } else if (e.status==='authorized'){
+      if (e.authorizedImg){
+        ctx.save(); ctx.translate(handX,handY); ctx.rotate(-0.2);
+        ctx.drawImage(e.authorizedImg, -devSize*0.5, -devSize*0.5, devSize, devSize);
+        ctx.restore();
+      } else { drawDevicePlaceholder(handX,handY,devSize,'#22c55e',-0.2); }
+      badge(e.x + hd*0.36, e.y - hd*0.52, hd*0.18, '#22c55e', 'OK');
+    }
+  } else {
+    badge(e.x + hd*0.36, e.y - hd*0.52, hd*0.18, '#ff3e3e', 'GRR');
+  }
+
+  // HEAD (clip circle), drawn last so it sits over sp1 head
+  ctx.save(); ctx.beginPath(); ctx.arc(e.x, e.y, hd*0.5, 0, Math.PI*2); ctx.clip();
+  if (e.head) ctx.drawImage(e.head, e.x-hd*0.5, e.y-hd*0.5, hd, hd);
+  else { // placeholder face
+    ctx.fillStyle='#ffdbb5'; ctx.fillRect(e.x-hd*0.5,e.y-hd*0.5,hd,hd);
+    ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(e.x-hd*0.17, e.y-hd*0.05, hd*0.06, 0, Math.PI*2);
+    ctx.arc(e.x+hd*0.17, e.y-hd*0.05, hd*0.06, 0, Math.PI*2); ctx.fill();
+    ctx.fillRect(e.x-hd*0.18, e.y+hd*0.15, hd*0.36, hd*0.06);
   }
   ctx.restore();
 
-  // contour
-  ctx.lineWidth=Math.max(8,s*0.06);
-  ctx.strokeStyle=e.type==='parent'?'#ba2020':'#000';
-  ctx.beginPath(); ctx.arc(e.x, e.y, s*0.5, 0, Math.PI*2); ctx.stroke();
-
-  // device / badges
-  const dx=e.x + s*0.78, dy=e.y + s*0.06, devS=s*0.95;
-  if (e.type==='kid'){
-    if (e.status==='unauthorized'){
-      if (e.device) ctx.drawImage(e.device, dx-devS*0.5, dy-devS*0.5, devS, devS);
-      else drawDevicePlaceholder(dx,dy,devS,'#ff2b2b');
-      band(e.x, e.y + s*0.28, s, '#ff2b2b');
-    } else if (e.status==='authorized'){
-      if (e.authorizedImg) ctx.drawImage(e.authorizedImg, dx-devS*0.5, dy-devS*0.5, devS, devS);
-      else drawDevicePlaceholder(dx,dy,devS,'#22c55e');
-      badge(e.x + s*0.32, e.y - s*0.32, s*0.22, '#22c55e','OK');
-    }
-  } else { badge(e.x + s*0.32, e.y - s*0.32, s*0.22, '#ff3e3e','GRR'); }
+  // store clickable zones for this entity
+  e.hitAreas = {
+    head: {x:e.x, y:e.y, r:hd*0.55},
+    device: {x:handX, y:handY, w:devSize, h:devSize, rot:-0.2}
+  };
 }
-function drawDevicePlaceholder(cx,cy,size,color){
-  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-0.18);
+function drawDevicePlaceholder(cx,cy,size,color,rot=-0.18){
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot);
   ctx.fillStyle='#000'; ctx.fillRect(-size*0.5-6,-size*0.6-6,size+12,size*1.2+12);
   ctx.fillStyle='#fff'; ctx.fillRect(-size*0.5,-size*0.6,size,size*1.2);
   ctx.fillStyle=color; ctx.fillRect(-size*0.5,size*0.05,size,size*0.12);
@@ -328,106 +241,71 @@ function badge(cx,cy,r,color,text){
   ctx.fillStyle='#000'; ctx.font=`${Math.floor(r*0.95)}px Arial Black`; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(text,cx,cy+1); ctx.restore();
 }
-function band(cx,cy,w,color){
-  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-0.5);
-  ctx.fillStyle=color; ctx.strokeStyle='#000'; ctx.lineWidth=8;
-  ctx.fillRect(-w/2,-14,w,28); ctx.strokeRect(-w/2,-14,w,28);
-  ctx.restore();
+
+/* Puffs */
+function addPuff(x,y,color,label){ puffs.push({x,y,age:0,life:560,label,color}); }
+function drawPuffs(dt){ puffs=puffs.filter(p=>p.age<p.life);
+  for(const p of puffs){ p.age+=dt; const t=p.age/p.life;
+    ctx.globalAlpha=1-t; ctx.fillStyle=p.color; ctx.font=Math.floor(Math.min(W,H)*0.1)+'px Impact, Arial Black';
+    ctx.textAlign='center'; ctx.fillText((p.label>0?'+':'')+p.label, p.x, p.y - t*80); ctx.globalAlpha=1; }
 }
 
-/* puffs ±1 */
-function addPuff(x,y,color,label){
-  puffs.push({x,y,age:0,life:560,label,color});
-}
-function drawPuffs(dt){
-  puffs=puffs.filter(p=>p.age<p.life);
-  for(const p of puffs){
-    p.age+=dt; const t=p.age/p.life;
-    ctx.globalAlpha=1-t; ctx.fillStyle=p.color;
-    ctx.font=Math.floor(Math.min(W,H)*0.1)+'px Impact, Arial Black';
-    ctx.textAlign='center'; ctx.fillText((p.label>0?'+':'')+p.label, p.x, p.y - t*80);
-    ctx.globalAlpha=1;
-  }
-}
-
-/* rendu */
+/* Loop */
 let lastT=0;
-function loop(t){
-  if(!running) return;
-  const dt=lastT? (t-lastT):16; lastT=t;
-  ctx.fillStyle='#72d6ff'; ctx.fillRect(0,0,W,H);
-  hills();
+function loop(t){ if(!running) return; const dt=lastT?(t-lastT):16; lastT=t;
+  ctx.fillStyle='#72d6ff'; ctx.fillRect(0,0,W,H); hills();
   if(current && phase==='show') drawEntity(current);
   drawPuffs(dt);
   requestAnimationFrame(loop);
 }
 
-/* saisie */
+/* Input (tap on head OR device) */
 function onTap(e){
   if(!running || !current || phase!=='show') return;
-  let cx,cy;
-  if (e.changedTouches && e.changedTouches[0]) { cx=e.changedTouches[0].clientX; cy=e.changedTouches[0].clientY; }
-  else { cx=e.clientX; cy=e.clientY; }
+  let cx,cy; if(e.changedTouches && e.changedTouches[0]){cx=e.changedTouches[0].clientX; cy=e.changedTouches[0].clientY;} else {cx=e.clientX; cy=e.clientY;}
   const rect=canvas.getBoundingClientRect(); const dpr=Math.min(2,window.devicePixelRatio||1);
   const x=(cx-rect.left)*dpr, y=(cy-rect.top)*dpr;
 
-  const s=current.size, hx=current.x, hy=current.y;
-  const onHead = Math.hypot(x-hx,y-hy) <= s*0.55;
-  let onDevice=false;
-  if(current.type==='kid'){
-    const dx=hx + s*0.78, dy=hy + s*0.06, sw=s*1.0;
-    if(x>=dx-sw*0.5 && x<=dx+sw*0.5 && y>=dy-sw*0.5 && y<=dy+sw*0.5) onDevice=true;
-  }
-  if(onHead || onDevice){
-    const isGood = (current.type==='kid' && current.status==='unauthorized');
-    score += isGood ? 1 : -1;
-    ui.score.textContent = score;
-    addPuff(x,y, isGood ? '#22c55e' : '#ff3e3e', isGood ? +1 : -1);
-    (isGood? sGood : sBad)();
+  const A=current.hitAreas;
+  const headOK = Math.hypot(x-A.head.x, y-A.head.y) <= A.head.r;
+  const dx=x-A.device.x, dy=y-A.device.y; // rough AABB (rotation ignored for simplicity)
+  const devOK = (Math.abs(dx) <= A.device.w*0.55 && Math.abs(dy) <= A.device.h*0.55);
+
+  if (headOK || devOK){
+    const good = (current.type==='kid' && current.status==='unauthorized');
+    score += good ? 1 : -1; ui.score.textContent=score;
+    addPuff(x,y, good ? '#22c55e' : '#ff3e3e', good ? +1 : -1);
+    (good? sGood : sBad)();
     clearTimeout(showTO); endShow();
   }
   if(e.cancelable) e.preventDefault();
 }
-function attachOverlayInput(){
-  ['pointerdown','mousedown','click','touchstart'].forEach(t=> taplayer.addEventListener(t,onTap,{passive:false}));
-}
-function detachOverlayInput(){
-  ['pointerdown','mousedown','click','touchstart'].forEach(t=> taplayer.removeEventListener(t,onTap,{passive:false}));
+function attachInput(){ ['pointerdown','mousedown','click','touchstart'].forEach(t=> taplayer.addEventListener(t,onTap,{passive:false})); }
+function detachInput(){ ['pointerdown','mousedown','click','touchstart'].forEach(t=> taplayer.removeEventListener(t,onTap,{passive:false})); }
+
+/* Text wrap */
+function wrapText(text,cx,y,maxW){const words=text.split(' '); let line='',lines=[];
+  for(const w of words){const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxW){lines.push(line); line=w;} else line=test;}
+  if(line) lines.push(line); const size=parseInt(ctx.font,10), lh=size*1.2; y-=(lines.length-1)*lh/2; for(const L of lines){ctx.fillText(L,cx,y); y+=lh;}
 }
 
-/* texte multi-lignes centré */
-function wrapText(text, cx, y, maxW){
-  const words=text.split(' '); let line='', lines=[];
-  for(const w of words){
-    const test=line? line+' '+w : w;
-    if(ctx.measureText(test).width>maxW){ lines.push(line); line=w; } else { line=test; }
-  }
-  if(line) lines.push(line);
-  const size=parseInt(ctx.font,10); const lh=size*1.2;
-  y -= (lines.length-1)*lh/2;
-  for(const L of lines){ ctx.fillText(L, cx, y); y+=lh; }
+/* End screen comment */
+function endGame(){ running=false; cleanup(); document.body.classList.remove('playing');
+  const COMMENTS={top:["Bravo ! Zéro écran, 100 % victoire parentale !","Héros anti-écran ! Les enfants demandent un livre… ou presque.","Score épique ! Les écrans sont au coin punition."],
+    good:["Bien joué ! Les parents respirent, les écrans transpirent.","Super rythme ! Les pouces des parents te disent merci.","Pas mal du tout ! Encore un peu et on coupe le Wi-Fi."],
+    ok:["Pas mal… on sent le potentiel anti-écran !","On y est presque : encore deux tapes et c’est dodo sans tablette.","Ça progresse ! Les écrans commencent à trembler."],
+    low:["Aïe… aujourd’hui les écrans ont mené la danse. Revanche ?","Oups ! Les tablettes ont pris l’avantage. On retente ?","Courage ! Même les super-parents ont des jours avec écrans."]};
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const line = score>=20?pick(COMMENTS.top):score>=10?pick(COMMENTS.good):score>=0?pick(COMMENTS.ok):pick(COMMENTS.low);
+
+  const bw=Math.min(W*0.9,880), bh=Math.min(H*0.55,420), x=(W-bw)/2, y=(H-bh)/2;
+  ctx.save(); ctx.globalAlpha=.85; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+  ctx.fillStyle='#ffce3a'; ctx.fillRect(x,y,bw,bh); ctx.lineWidth=10; ctx.strokeStyle='#000'; ctx.strokeRect(x,y,bw,bh);
+  ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.font=`${Math.floor(bh*0.28)}px Impact, Arial Black`; ctx.fillText(`Score : ${score}`, W/2, y+bh*0.42);
+  ctx.font=`${Math.floor(bh*0.12)}px Arial Black`; wrapText(line, W/2, y+bh*0.72, bw*0.85); ctx.restore();
 }
 
-/* boutons */
-function start(){
-  ensureAudio();
-  score=0; ui.score.textContent=score;
-  timeLeft=TOTAL_SECS; updateTimerText();
-  running=true; ui.playBtn.disabled=true; ui.replayBtn.disabled=false;
-  document.body.classList.add('playing');
-  attachOverlayInput();
-  scheduleShow(); stopTimer(); startTimer();
-  requestAnimationFrame(loop);
-}
-function restart(){ running=false; cleanup(); drawSplash(); start(); }
-
-/* nettoyage */
-function cleanup(){
-  clearTimeout(showTO); clearTimeout(blankTO);
-  stopTimer(); detachOverlayInput();
-}
-
-/* premier écran */
+/* Start screen */
 drawSplash();
 </script>
 </body>
