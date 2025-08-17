@@ -169,63 +169,76 @@ function endGame(){ running=false; cleanup(); document.body.classList.remove('pl
 
 /* Compose & draw character (sp1 body + clipped head + device in hand) */
 function drawEntity(e){
-  const hd=e.headSize;          // head diameter
-  const bodyW=hd*1.1, bodyH=hd*1.8;
-  const bodyX=e.x-bodyW/2, bodyY=e.y-hd*0.2; // place body under head
+  const hd = e.headSize;             // head diameter
+  const scale = 1.2;                 // enlarge body a little
+  const bw = IMGS.body ? IMGS.body.width * scale : hd*1.2;
+  const bh = IMGS.body ? IMGS.body.height * scale : hd*2.0;
+
+  // center body
+  const bodyX = e.x - bw/2;
+  const bodyY = e.y - bh*0.25; // place so head sits just above shoulders
 
   // shadow
-  ctx.save(); ctx.translate(e.x, bodyY+bodyH*0.92); ctx.scale(1,0.35);
-  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(0,0,bodyW*0.35,bodyW*0.22,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.save();
+  ctx.translate(e.x, bodyY+bh*0.92);
+  ctx.scale(1,0.35);
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(0,0,bw*0.35,bw*0.22,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
 
-  // body sprite or placeholder
-  if (IMGS.body){
-    ctx.drawImage(IMGS.body, bodyX, bodyY, bodyW, bodyH);
+  // draw body
+  if(IMGS.body){
+    ctx.drawImage(IMGS.body, bodyX, bodyY, bw, bh);
   } else {
-    // simple torso placeholder
-    ctx.fillStyle='#ffd34d'; ctx.fillRect(bodyX+bodyW*0.12, bodyY+bodyH*0.25, bodyW*0.76, bodyH*0.55);
-    ctx.fillStyle='#8b5a2b'; ctx.fillRect(bodyX+bodyW*0.3, bodyY+bodyH*0.8, bodyW*0.4, bodyH*0.15);
+    ctx.fillStyle='#ffd34d';
+    ctx.fillRect(bodyX+bw*0.2, bodyY+bh*0.25, bw*0.6, bh*0.55);
   }
 
-  // device position near right hand
-  const handX = bodyX + bodyW*0.78;
-  const handY = bodyY + bodyH*0.58;
+  // device in right hand
+  const handX = bodyX + bw*0.75;
+  const handY = bodyY + bh*0.55;
   const devSize = hd*0.7;
 
-  // device-in-hand / badges
   if (e.type==='kid'){
-    if (e.status==='unauthorized'){
-      if (e.device) {
+    if(e.status==='unauthorized'){
+      if(e.device){
         ctx.save(); ctx.translate(handX,handY); ctx.rotate(-0.2);
-        ctx.drawImage(e.device, -devSize*0.5, -devSize*0.5, devSize, devSize);
+        ctx.drawImage(e.device, -devSize/2, -devSize/2, devSize, devSize);
         ctx.restore();
-      } else { drawDevicePlaceholder(handX,handY,devSize,'#ff2b2b',-0.2); }
-    } else if (e.status==='authorized'){
-      if (e.authorizedImg){
+      } else {
+        drawDevicePlaceholder(handX,handY,devSize,'#ff2b2b');
+      }
+    } else if(e.status==='authorized'){
+      if(e.authorizedImg){
         ctx.save(); ctx.translate(handX,handY); ctx.rotate(-0.2);
-        ctx.drawImage(e.authorizedImg, -devSize*0.5, -devSize*0.5, devSize, devSize);
+        ctx.drawImage(e.authorizedImg, -devSize/2, -devSize/2, devSize, devSize);
         ctx.restore();
-      } else { drawDevicePlaceholder(handX,handY,devSize,'#22c55e',-0.2); }
-      badge(e.x + hd*0.36, e.y - hd*0.52, hd*0.18, '#22c55e', 'OK');
+      }
+      badge(e.x+hd*0.36,e.y-hd*0.52,hd*0.18,'#22c55e','OK');
     }
   } else {
-    badge(e.x + hd*0.36, e.y - hd*0.52, hd*0.18, '#ff3e3e', 'GRR');
+    badge(e.x+hd*0.36,e.y-hd*0.52,hd*0.18,'#ff3e3e','GRR');
   }
 
-  // HEAD (clip circle), drawn last so it sits over sp1 head
-  ctx.save(); ctx.beginPath(); ctx.arc(e.x, e.y, hd*0.5, 0, Math.PI*2); ctx.clip();
-  if (e.head) ctx.drawImage(e.head, e.x-hd*0.5, e.y-hd*0.5, hd, hd);
-  else { // placeholder face
-    ctx.fillStyle='#ffdbb5'; ctx.fillRect(e.x-hd*0.5,e.y-hd*0.5,hd,hd);
-    ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(e.x-hd*0.17, e.y-hd*0.05, hd*0.06, 0, Math.PI*2);
-    ctx.arc(e.x+hd*0.17, e.y-hd*0.05, hd*0.06, 0, Math.PI*2); ctx.fill();
-    ctx.fillRect(e.x-hd*0.18, e.y+hd*0.15, hd*0.36, hd*0.06);
+  // HEAD – centered above torso
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(e.x, e.y, hd/2, 0, Math.PI*2);
+  ctx.clip();
+  if(e.head){
+    ctx.drawImage(e.head, e.x-hd/2, e.y-hd/2, hd, hd);
+  } else {
+    ctx.fillStyle='#ffdbb5';
+    ctx.fillRect(e.x-hd/2,e.y-hd/2,hd,hd);
   }
   ctx.restore();
 
-  // store clickable zones for this entity
+  // clickable zones
   e.hitAreas = {
-    head: {x:e.x, y:e.y, r:hd*0.55},
-    device: {x:handX, y:handY, w:devSize, h:devSize, rot:-0.2}
+    head:{x:e.x,y:e.y,r:hd*0.55},
+    device:{x:handX,y:handY,w:devSize,h:devSize,rot:-0.2}
   };
 }
 function drawDevicePlaceholder(cx,cy,size,color,rot=-0.18){
