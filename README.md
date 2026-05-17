@@ -3,6 +3,11 @@
 [![View Site](https://img.shields.io/badge/View%20Website-Click%20Here-blue?style=for-the-badge)](https://fycodelab.github.io/tresor2025/)
 
 ---
+<p align="center">
+  <img src="assets/tresor.png"
+       style="width:50%;">
+</p>
+---
 
 ## 🌐 What is this project?
 
